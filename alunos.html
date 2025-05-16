@@ -604,16 +604,7 @@
                         
                         // Se a API retornou dados, usá-los
                         if (alunosData.length > 0) {
-                            alunosData.forEach(aluno => {
-                                addStudent(
-                                    aluno.nome,
-                                    aluno.matricula,
-                                    aluno.data_nascimento,
-                                    aluno.escola_id,
-                                    aluno.turma_id,
-                                    aluno.id
-                                );
-                            });
+                                                        alunosData.forEach(aluno => {                                console.log("Dados do aluno recebido da API:", aluno);                                addStudent(                                    aluno.nome,                                    aluno.matricula,                                    aluno.data_nascimento,                                    aluno.escola_id,                                    aluno.turma_id,                                    aluno.id                                );                            });
                             
                             console.log('Carregados ' + alunosData.length + ' alunos da API (página ' + 
                                       responseData.page + ' de ' + responseData.totalPages + 
@@ -651,6 +642,11 @@
             const filterClassId = ensureNumber(document.getElementById('filterClass').value);
             
             console.log("Renderizando alunos com paginação do backend");
+            
+            // Debug: verificar um aluno exemplo
+            if (alunosData.length > 0) {
+                console.log("Exemplo de aluno da API:", alunosData[0]);
+            }
             
             // Aplicar filtros (se necessário, fazer uma nova requisição à API com os filtros)
             let filteredStudents = alunosData;
@@ -720,10 +716,18 @@
             
             // Renderizar os alunos na página atual
             filteredStudents.forEach(student => {
-                const school = getSchools().find(s => s.id === student.schoolId);
+                // Acessar diretamente as propriedades da API
+                const escola_id = ensureNumber(student.escola_id);
+                const turma_id = ensureNumber(student.turma_id);
+                
+                // Log para debug
+                console.log(`Procurando escola ID=${escola_id} e turma ID=${turma_id} para aluno ${student.nome}`);
+                
+                // Buscar escola e turma
+                const school = getSchools().find(s => s.id === escola_id);
                 const schoolName = school ? school.name : 'Escola não encontrada';
                 
-                const cls = getClasses().find(c => c.id === student.classId);
+                const cls = getClasses().find(c => c.id === turma_id);
                 const className = cls ? cls.name : 'Turma não encontrada';
                 
                 const li = document.createElement('li');
@@ -738,10 +742,10 @@
                             </div>
                             <div class="min-w-0 flex-1 px-4">
                                 <div>
-                                    <p class="text-sm font-medium text-blue-600 truncate">${student.name}</p>
+                                    <p class="text-sm font-medium text-blue-600 truncate">${student.nome}</p>
                                     <p class="mt-1 flex flex-wrap gap-2">
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            <i class="fas fa-id-card mr-1"></i> ${student.registration}
+                                            <i class="fas fa-id-card mr-1"></i> ${student.matricula}
                                         </span>
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                             <i class="fas fa-school mr-1"></i> ${schoolName}
@@ -999,6 +1003,13 @@
             
             // Garantir que a matrícula seja uma string
             const regStr = registration ? registration.toString() : "";
+            
+            // Conversão explícita dos IDs para números para garantir consistência
+            schoolId = ensureNumber(schoolId);
+            classId = ensureNumber(classId);
+            
+            // Log para debug
+            console.log(`Adicionando aluno: nome=${name}, escola_id=${schoolId}, turma_id=${classId}`);
             
             const newStudent = {
                 id: newId,
