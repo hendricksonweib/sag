@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  # Serviço do MySQL
+  db:
+    image: mysql:8.0
+    container_name: sag-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: senha
+      MYSQL_DATABASE: sag_sistema
+      MYSQL_USER: sag_user
+      MYSQL_PASSWORD: sag_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - sag-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psenha"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+# Volumes para persistência de dados
+volumes:
+  mysql_data:
+    driver: local
+
+# Rede para comunicação entre os containers
+networks:
+  sag-network:
+    driver: bridge 

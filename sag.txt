@@ -1,0 +1,189 @@
+Sistema de avaliação e gerenciamento - SAG
+
+> O sistema consiste em uma plataforma educacional voltada para a gestão e aplicação de provas. O sistema deve cadastrar questões e gerar uma prova, deve ser capaz de cadastrar alunos, gerar e receber um gabarito. O sistema deve corrigir o gabarito dos alunos e salvar a nota do aluno no BD. A partir das notas dos alunos, o sistema precisa gerar um Dashboard e um relatório.
+> 
+
+> O sistema deve possibilitar vincular uma prova a uma instituição e uma turma.
+> 
+
+> O sistema deve gerar PDFs para as provas e gabaritos permitindo que o ator faça o download dos mesmo.
+> 
+
+# **Requisitos Funcionais**
+
+## RF-001: Criar Prova
+
+| Descrição | Os atores criam uma prova e adiciona questões. O ator deve sinalizar qual alternativa da questão está correta. |
+| --- | --- |
+| Ator | Admin |
+| Fluxo | 1. Botão criar avaliação
+2. Definir o nome da prova
+3. Preencher os seguintes campos:
+3.1 - Enunciado da questão
+3.2 - Enunciado das alternativas A, B, C, D
+3.3 - Definir a alternativa correta
+4. O ator pode adicionar outra questão
+5. Botão para confirmar a criação da prova
+6. Mensagem de sucesso |
+| Pré-condições | Autenticado no Sistema |
+| Pós-condições | Voltar a página anterior |
+
+## RF-002: Cadastrar aluno
+
+| Descrição | O coordenador deve ser capaz de cadastrar um aluno. Cada aluno deve conter as seguintes informações
+• Nome;
+• Matrícula;
+• Escola;
+• Turma;
+• Serie. |
+| --- | --- |
+| Ator | Coordenador, Admin |
+| Fluxo | 1. Acionar botão para cadastrar o aluno;
+2. Listar as escolas do sistema;
+3. Escolher escola que o aluno pertence;
+4. Listar turmas que pertence a escola escolhida;
+5. Escolher a turma que o aluno pertence;
+6. Informar o nome do aluno;
+7. Informar a matrícula;
+8. Acionar botão para cadastrar aluno no sistema;
+9. Mensagem de sucesso. |
+| Pré-condições | Autenticado no Sistema |
+| Pós-condições | Voltar a página anterior |
+
+## RF-003: Cadastrar escola
+
+| Descrição | O coordenador deve ser capaz de criar uma escola para que seja possivel atribuir turmas e alunos. Cada escola deve ter a seguintes informações:
+• Nome. |
+| --- | --- |
+| Ator | Admin |
+| Fluxo | 1. Acionar botão para cadastrar escola;
+2. Informar nome da escola;
+3. Acionar botão para concluir o cadastro.
+4. Mensagem de sucesso |
+| Pré-condições | Autenticado no Sistema |
+| Pós-condições | Voltar a página anterior |
+
+## RF-004: Cadastrar turma
+
+| Descrição | O coordenador deve ser capaz de cadastrar uma turma que pertencerá a uma escola e será composta de alunos para que possa realizar as avaliações. Cada turma deve ser composta das seguintes informações:
+• Nome;
+• Serie;
+• Escola;
+• Turno. |
+| --- | --- |
+| Ator | Coordenador, Admin |
+| Fluxo | 1. Acionar botão para criar uma turma;
+2. Listar todas as escolas;
+3. Escolher escola;
+4. Informar o nome da turma;
+5. Informar a serie;
+6. Informar o turno;
+5. Acionar botão para cadastrar turma;
+6. Mensagem de sucesso. |
+| Pré-condições | Login |
+| Pós-condiçẽs | Voltar para página principal |
+
+## RF-005: Cadastrar User
+
+| Descrição | O sistema deve ser capaz de criar usuários para que possam ultilizar o sistema contendo 4 tipos de usuários:
+• Admin;
+• Coordenador;
+• Professor;
+• Gestor;
+• Secretatria; |
+| --- | --- |
+| Ator | Coordenador, Admin |
+| Fluxo | 1. Acionar botão de cadastrar usuário;
+2. informar email;
+3. Informar senha;
+4. informar tipo de usuário;
+5. Acionar botão de cadastrar usuário;
+6. Mensagem de sucesso. |
+| Pré-condições | Login |
+| Pós-condição | Voltar para página principal |
+
+## RF-006: Vincular prova a uma turma
+
+| Descrição | O sistema deve permitir que o **aplicador** faça o download dos arquivos **PDF** da prova e dos **gabaritos individuais** gerados para cada aluno. Cada gabarito deve conter um **QR Code** para facilitar a identificação e automação da correção. |
+| --- | --- |
+| Ator | Admin |
+| Fluxo | 1. Botão para iniciar um vinculo
+2. O ator irá selecionar os seguintes critérios:
+2.1 - Selecionar uma prova
+2.2 - Selecionar uma escolha
+2.3 - Selecionar o grau(1°, 2°, …)
+2.4 - Selecionar a turma
+2.5 - Selecionar o turno
+3. Botão para finalizar
+4. Mensagem de sucesso. |
+| Pré-condições | Autenticado no Sistema |
+| Pós-condição | Voltar para página principal |
+
+## RF-007: Baixar PDFs e Gabaritos
+
+| Descrição | O sistema deve permitir que o **Admin** faça o download dos arquivos **PDF** da prova e dos **gabaritos individuais** gerados para cada aluno. Cada gabarito deve conter um **QR Code** para indentificação. |
+| --- | --- |
+| Ator | Admin |
+| Fluxo | 1. Botão baixar provas
+2. O ator irá selecionar a prova
+3. Botão baixar PDF ou gabarito
+4. Mensagem de sucesso |
+| Fluxo alternativo | 1. Botão baixar provas
+2. Box para selecionar todas as provas
+3. Botão baixar PDFs ou gabaritos
+4. Mensagem de sucesso |
+| Pré-condições | Autenticado no Sistema |
+| Pós-condição | Voltar para página principal |
+
+## RF-008: Coletar gabarito
+
+| Descrição | O sistema deve permitir que o **aplicador** envie os gabaritos preenchidos pelos alunos para processamento. O **QR Code** presente no gabarito será utilizado para identificar o aluno. A correção das respostas será realizada por um código em **Python**, que analisará a imagem do gabarito e identificará as alternativas marcadas. Após a análise, os resultados devem ser armazenados no banco de dados para cálculo das notas. |
+| --- | --- |
+| Ator | Admin, coordenador |
+| Fluxo | 1. Botão para coletar gabaritos
+2. Botão para abrir a câmera
+2.1. O ator irá tirar uma foto do gabarito
+3. Irá aparecer a resposta do aluno na tela
+4. Botão para concluir
+5. Mensagem de sucesso |
+| Pré-condições | Autenticado no Sistema |
+| Pós-condição | Voltar para página principal |
+| Observação | **O ator poderá editar a reposta do aluno no topico 3.** |
+
+## RF-009: Gerar gabarito oficial
+
+| Descrição | O sistema deverá permitir a geração de um **Gabarito Oficial**, contendo apenas as respostas corretas das questões de uma prova específica. Esse gabarito será utilizado para conferência e correção das provas aplicadas, podendo ser exportado no formato PDF. |
+| --- | --- |
+| Ator | Admin |
+| Fluxo | 1. Botão baixar provas
+2. O ator irá selecionar a prova
+3. Botão baixar gabarito oficial
+4. Mensagem de sucesso |
+| Fluxo alternativo | 1. Botão baixar provas
+2. O ator irá selecionar todas as provas
+3. Botão baixar gabarito oficial
+4. Mensagem de sucesso |
+| Pré-condições | Autenticado no Sistema |
+| Pós-condição | Voltar para página principal |
+
+# Requisitos não-funcionais
+
+### RNF-001: Tecnologias
+
+O sistema deve ser desenvolvido utilizando **PHP** no back-end e **React** no front-end, garantindo uma arquitetura moderna e escalável.
+
+### RNF-002: Reponsividade
+
+O sistema deve ser totalmente responsivo, garantindo uma experiência de uso adequada em dispositivos de diferentes tamanhos, como desktops, tablets e smartphones
+
+### RNF-003: Dashboard
+
+O sistema deve incluir um **dashboard interativo**, apresentando métricas e estatísticas sobre o desempenho dos alunos e turmas.
+
+### RNF-004: Gerar PDFs
+
+O sistema deve gerar provas e gabaritos no formato **PDF**
+
+### RNF-005 QRcode
+
+Cada gabarito deve conter um **QR Code**, permitindo rápida identificação do aluno e automação na correção.

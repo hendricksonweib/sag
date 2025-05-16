@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  # Serviço do MySQL para ambiente de desenvolvimento
+  db:
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  # Serviço da API para ambiente de desenvolvimento
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      - /app/dist
+    command: npm run dev
+    environment:
+      - NODE_ENV=development 
