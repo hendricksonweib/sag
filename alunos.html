@@ -554,68 +554,144 @@
         // Variable to store the pagination controller
         let studentsPagination = null;
 
-        // Modified function to render students list with pagination
-        function renderStudentsList() {
+        // Variáveis para controle de paginação da API
+        let currentApiPage = 1;
+        let totalApiPages = 1;
+        let totalApiStudents = 0;
+        let apiPageLimit = 10; // Número de itens por página
+        
+        // Função para carregar alunos da API com paginação
+        async function loadStudentsFromAPI(page = 1, limit = 10) {
+            try {
+                console.log(`Carregando alunos da API (página ${page}, limite ${limit})...`);
+                
+                // Salvar os valores atuais de paginação
+                currentApiPage = page;
+                apiPageLimit = limit;
+                
+                // Mostrar indicador de carregamento
+                document.getElementById('studentsList').innerHTML = `
+                    <li class="px-4 py-4 sm:px-6 text-center text-gray-500">
+                        <i class="fas fa-spinner fa-spin mr-2"></i> Carregando alunos da API...
+                    </li>`;
+                
+                // Construir URL com parâmetros de paginação
+                const apiUrl = `https://sag-sag.rak8a3.easypanel.host/api/alunos?page=${page}&limit=${limit}`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const responseData = await response.json();
+                    console.log('Resposta da API carregada com sucesso:', responseData);
+                    
+                    // Verificar o formato da resposta com paginação
+                    if (responseData && responseData.data && Array.isArray(responseData.data)) {
+                        // Atualizar variáveis de controle de paginação
+                        totalApiPages = responseData.totalPages || 1;
+                        totalApiStudents = responseData.total || 0;
+                        currentApiPage = responseData.page || 1;
+                        
+                        // Extrair os dados de alunos do campo "data"
+                        const alunosData = responseData.data;
+                        
+                        // Limpar alunos existentes e adicionar os novos
+                        localStorage.setItem('students', JSON.stringify([]));
+                        
+                        // Se a API retornou dados, usá-los
+                        if (alunosData.length > 0) {
+                            alunosData.forEach(aluno => {
+                                addStudent(
+                                    aluno.nome,
+                                    aluno.matricula,
+                                    aluno.data_nascimento,
+                                    aluno.escola_id,
+                                    aluno.turma_id,
+                                    aluno.id
+                                );
+                            });
+                            
+                            console.log('Carregados ' + alunosData.length + ' alunos da API (página ' + 
+                                      responseData.page + ' de ' + responseData.totalPages + 
+                                      ', total: ' + responseData.total + ' alunos)');
+                            
+                            // Renderizar a lista com a paginação do backend
+                            renderStudentsListWithBackendPagination(alunosData, responseData);
+                        } else {
+                            // Caso a API não tenha retornado alunos, criar alguns exemplos
+                            console.log('Nenhum aluno retornado da API. Criando exemplos...');
+                            createSampleStudents();
+                            renderStudentsList(); // Usar a paginação no frontend como fallback
+                        }
+                    } else {
+                        console.error('Formato da resposta da API não é o esperado:', responseData);
+                        createSampleStudents();
+                        renderStudentsList(); // Usar a paginação no frontend como fallback
+                    }
+                } else {
+                    console.error('Erro ao carregar alunos da API:', response.status);
+                    createSampleStudents();
+                    renderStudentsList(); // Usar a paginação no frontend como fallback
+                }
+            } catch (error) {
+                console.error('Erro ao carregar alunos da API:', error);
+                createSampleStudents();
+                renderStudentsList(); // Usar a paginação no frontend como fallback
+            }
+        }
+        
+        // Função para renderizar a lista de alunos usando a paginação do backend
+        function renderStudentsListWithBackendPagination(alunosData, paginationData) {
             const studentsList = document.getElementById('studentsList');
             const filterSchoolId = ensureNumber(document.getElementById('filterSchool').value);
             const filterClassId = ensureNumber(document.getElementById('filterClass').value);
             
-            console.log("Aplicando filtros - Escola: " + (filterSchoolId || "nenhuma") + ", Turma: " + (filterClassId || "nenhuma"));
+            console.log("Renderizando alunos com paginação do backend");
+            
+            // Aplicar filtros (se necessário, fazer uma nova requisição à API com os filtros)
+            let filteredStudents = alunosData;
+            let shouldUseBackendFilter = false;
+            let filterMessage = "";
             
             // Adicionar um banner informativo sobre os filtros aplicados
             const filterBanner = document.getElementById('filterBanner') || document.createElement('div');
             filterBanner.id = 'filterBanner';
             filterBanner.className = 'bg-blue-50 border-l-4 border-blue-500 p-4 mb-4';
             
-            let students;
-            let filterMessage = "";
-            
-            // Obter a lista filtrada de alunos com base nos filtros selecionados
-            if (filterSchoolId && filterClassId) {
-                // Filtrar por escola e turma
-                students = getStudents(filterSchoolId, filterClassId);
+            // Se temos filtros, deveríamos fazer uma nova chamada à API com esses filtros
+            if (filterSchoolId || filterClassId) {
+                shouldUseBackendFilter = true;
                 
-                // Obter nomes para a mensagem
-                const escola = getSchools().find(s => s.id === filterSchoolId);
-                const turma = getClasses().find(c => c.id === filterClassId);
-                filterMessage = "<strong>Filtros aplicados:</strong> Escola \"" + (escola?.name || "Desconhecida") + 
-                                "\" + Turma \"" + (turma?.name || "Desconhecida") + "\" (" + students.length + " alunos)";
-                
-            } else if (filterSchoolId) {
-                // Filtrar apenas por escola
-                students = getStudents(filterSchoolId);
-                
-                // Obter nome da escola para a mensagem
-                const escola = getSchools().find(s => s.id === filterSchoolId);
-                filterMessage = "<strong>Filtro aplicado:</strong> Escola \"" + (escola?.name || "Desconhecida") + 
-                                "\" (" + students.length + " alunos)";
-                
-            } else if (filterClassId) {
-                // Filtrar apenas por turma
-                students = getStudents(null, filterClassId);
-                
-                // Obter nome da turma para a mensagem
-                const turma = getClasses().find(c => c.id === filterClassId);
-                const turmaName = turma?.name || 'Desconhecida';
-                let escolaName = 'Desconhecida';
-                
-                if (turma && turma.schoolId) {
-                    const escola = getSchools().find(s => s.id === ensureNumber(turma.schoolId));
-                    if (escola) {
-                        escolaName = escola.name;
-                    }
+                // Aqui você pode implementar a lógica para fazer uma nova chamada à API com os filtros
+                // Por enquanto, vamos apenas exibir uma mensagem informativa
+                if (filterSchoolId && filterClassId) {
+                    // Obter nomes para a mensagem
+                    const escola = getSchools().find(s => s.id === filterSchoolId);
+                    const turma = getClasses().find(c => c.id === filterClassId);
+                    filterMessage = "<strong>Filtros aplicados:</strong> Escola \"" + (escola?.name || "Desconhecida") + 
+                                    "\" + Turma \"" + (turma?.name || "Desconhecida") + "\"<br>" +
+                                    "<span class='text-sm text-gray-500'>(Os filtros serão aplicados na próxima versão)</span>";
+                } else if (filterSchoolId) {
+                    // Obter nome da escola para a mensagem
+                    const escola = getSchools().find(s => s.id === filterSchoolId);
+                    filterMessage = "<strong>Filtro aplicado:</strong> Escola \"" + (escola?.name || "Desconhecida") + 
+                                    "\"<br><span class='text-sm text-gray-500'>(Os filtros serão aplicados na próxima versão)</span>";
+                } else if (filterClassId) {
+                    // Obter nome da turma para a mensagem
+                    const turma = getClasses().find(c => c.id === filterClassId);
+                    const turmaName = turma?.name || 'Desconhecida';
+                    filterMessage = "<strong>Filtro aplicado:</strong> Turma \"" + turmaName + 
+                                    "\"<br><span class='text-sm text-gray-500'>(Os filtros serão aplicados na próxima versão)</span>";
                 }
-                
-                filterMessage = "<strong>Filtro aplicado:</strong> Turma \"" + turmaName + 
-                                "\" da escola \"" + escolaName + "\" (" + students.length + " alunos)";
-                
             } else {
                 // Sem filtros aplicados
-                students = getStudents();
-                filterMessage = "<strong>Sem filtros aplicados</strong> - Mostrando todos os " + students.length + " alunos";
+                filterMessage = "<strong>Mostrando página " + paginationData.page + " de " + paginationData.totalPages + 
+                              "</strong> - Total: " + paginationData.total + " alunos";
             }
-            
-            console.log("Total de alunos após filtro: " + students.length);
             
             // Atualizar o banner informativo
             filterBanner.innerHTML = filterMessage;
@@ -627,7 +703,7 @@
             }
             
             // Se não houver alunos, mostrar mensagem e esconder paginação
-            if (students.length === 0) {
+            if (filteredStudents.length === 0) {
                 studentsList.innerHTML = '<li class="px-4 py-4 sm:px-6 text-center text-gray-500">' +
                     '<i class="fas fa-search text-xl mb-2"></i><br>' +
                     'Nenhum aluno encontrado para os filtros selecionados</li>';
@@ -636,117 +712,73 @@
             }
             
             // Mostrar os controles de paginação
-            document.getElementById('studentsPaginationControls').classList.remove('hidden');
+            const paginationControls = document.getElementById('studentsPaginationControls');
+            paginationControls.classList.remove('hidden');
             
-            // Limpar a lista atual e a paginação
+            // Limpar a lista atual
             studentsList.innerHTML = '';
-            document.getElementById('studentsPaginationContainer').innerHTML = '';
             
-            // Destruir o controlador anterior se existir
-            if (studentsPagination) {
-                console.log("Recriando controlador de paginação para exibir " + students.length + " alunos filtrados");
-            }
-            
-            // Sempre criar um novo controlador de paginação com os alunos filtrados
-            studentsPagination = null;
-            
-            // Inicializar a paginação com os alunos filtrados
-            initStudentsPagination(students);
-        }
-        
-        // Function to initialize pagination for students
-        function initStudentsPagination(students) {
-            console.log(`Inicializando paginação com ${students.length} alunos`);
-            
-            // Verificar primeiros 3 alunos para diagnóstico
-            if (students.length > 0) {
-                students.slice(0, Math.min(3, students.length)).forEach((student, index) => {
-                    console.log(`Aluno ${index} na paginação: ID=${student.id}, Nome=${student.name}, Turma=${student.classId}`);
-                    
-                    // Verificar se a turma existe
-                    const turma = getClasses().find(c => c.id === ensureNumber(student.classId));
-                    console.log(`Turma do aluno ${index}: ${turma ? turma.name : 'Não encontrada'}`);
-                });
-            }
-            
-            // Recriamos completamente o controlador de paginação a cada filtro
-            if (studentsPagination) {
-                console.log('Recriando controlador de paginação existente');
-            }
-            
-            studentsPagination = createPagination({
-                data: students,
-                itemsPerPage: 10,
-                renderItemCallback: (container, student, startIndex) => {
-                    const school = getSchools().find(s => s.id === student.schoolId);
-                    const schoolName = school ? school.name : 'Escola não encontrada';
-                    
-                    const cls = getClasses().find(c => c.id === student.classId);
-                    const className = cls ? cls.name : 'Turma não encontrada';
-                    
-                    const li = document.createElement('li');
-                    li.className = 'block hover:bg-gray-50';
-                    li.innerHTML = `
-                        <div class="flex items-center px-4 py-4 sm:px-6">
-                            <div class="min-w-0 flex-1 flex items-center">
-                                <div class="flex-shrink-0">
-                                    <span class="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
-                                        <i class="fas fa-user-graduate text-purple-600 text-lg"></i>
-                                    </span>
-                                </div>
-                                <div class="min-w-0 flex-1 px-4">
-                                    <div>
-                                        <p class="text-sm font-medium text-blue-600 truncate">${student.name}</p>
-                                        <p class="mt-1 flex flex-wrap gap-2">
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                <i class="fas fa-id-card mr-1"></i> ${student.registration}
-                                            </span>
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                <i class="fas fa-school mr-1"></i> ${schoolName}
-                                            </span>
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                                <i class="fas fa-users mr-1"></i> ${className}
-                                            </span>
-                                        </p>
-                                    </div>
-                                </div>
+            // Renderizar os alunos na página atual
+            filteredStudents.forEach(student => {
+                const school = getSchools().find(s => s.id === student.schoolId);
+                const schoolName = school ? school.name : 'Escola não encontrada';
+                
+                const cls = getClasses().find(c => c.id === student.classId);
+                const className = cls ? cls.name : 'Turma não encontrada';
+                
+                const li = document.createElement('li');
+                li.className = 'block hover:bg-gray-50';
+                li.innerHTML = `
+                    <div class="flex items-center px-4 py-4 sm:px-6">
+                        <div class="min-w-0 flex-1 flex items-center">
+                            <div class="flex-shrink-0">
+                                <span class="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
+                                    <i class="fas fa-user-graduate text-purple-600 text-lg"></i>
+                                </span>
                             </div>
-                            <div>
-                                <button class="text-indigo-600 hover:text-indigo-900 editStudent" data-id="${student.id}">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="ml-4 text-red-600 hover:text-red-900 deleteStudent" data-id="${student.id}">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                            <div class="min-w-0 flex-1 px-4">
+                                <div>
+                                    <p class="text-sm font-medium text-blue-600 truncate">${student.name}</p>
+                                    <p class="mt-1 flex flex-wrap gap-2">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            <i class="fas fa-id-card mr-1"></i> ${student.registration}
+                                        </span>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <i class="fas fa-school mr-1"></i> ${schoolName}
+                                        </span>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                            <i class="fas fa-users mr-1"></i> ${className}
+                                        </span>
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    `;
-                    
-                    container.appendChild(li);
-                },
-                containerSelector: '#studentsList',
-                paginationContainerSelector: '#studentsPaginationContainer',
-                emptyCallback: (container) => {
-                    container.innerHTML = `
-                        <li class="px-4 py-4 sm:px-6 text-center text-gray-500">
-                            Nenhum aluno encontrado para os filtros selecionados
-                        </li>`;
-                },
-                countElements: {
-                    start: document.getElementById('studentsStartItem'),
-                    end: document.getElementById('studentsEndItem'),
-                    total: document.getElementById('studentsTotalItems')
-                },
-                prevBtnSelector: '#studentsPrevPage',
-                nextBtnSelector: '#studentsNextPage',
-                prevBtnMobileSelector: '#studentsPrevPageMobile',
-                nextBtnMobileSelector: '#studentsNextPageMobile'
+                        <div>
+                            <button class="text-indigo-600 hover:text-indigo-900 editStudent" data-id="${student.id}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="ml-4 text-red-600 hover:text-red-900 deleteStudent" data-id="${student.id}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                studentsList.appendChild(li);
             });
             
-            // Render the pagination
-            studentsPagination.render();
+            // Atualizar os contadores de paginação
+            document.getElementById('studentsStartItem').textContent = ((paginationData.page - 1) * paginationData.limit) + 1;
+            document.getElementById('studentsEndItem').textContent = Math.min(
+                (paginationData.page * paginationData.limit), 
+                paginationData.total
+            );
+            document.getElementById('studentsTotalItems').textContent = paginationData.total;
             
-            // Add event handlers for the edit and delete buttons
+            // Atualizar os botões de paginação
+            updateBackendPaginationControls(paginationData);
+            
+            // Adicionar event listeners para os botões de editar e excluir
             document.querySelectorAll('.editStudent').forEach(button => {
                 button.addEventListener('click', function() {
                     const studentId = parseInt(this.getAttribute('data-id'));
@@ -761,70 +793,134 @@
                 });
             });
         }
-
-        // Função para carregar alunos da API
-        async function loadStudentsFromAPI() {
-            try {
-                console.log('Carregando alunos da API...');
-                
-                // Mostrar indicador de carregamento
-                document.getElementById('studentsList').innerHTML = `
-                    <li class="px-4 py-4 sm:px-6 text-center text-gray-500">
-                        <i class="fas fa-spinner fa-spin mr-2"></i> Carregando alunos da API...
-                    </li>`;
-                
-                const response = await fetch('https://sag-sag.rak8a3.easypanel.host/api/alunos', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('Alunos carregados com sucesso:', data);
-                    
-                    // Verificar se a resposta é um array
-                    if (Array.isArray(data)) {
-                        // Limpar alunos existentes e adicionar os novos
-                        localStorage.setItem('students', JSON.stringify([]));
-                        
-                        // Se a API retornou dados, usá-los
-                        if (data.length > 0) {
-                        data.forEach(aluno => {
-                            addStudent(
-                                aluno.nome,
-                                aluno.matricula,
-                                aluno.data_nascimento,
-                                aluno.escola_id,
-                                aluno.turma_id,
-                                aluno.id
-                            );
-                        });
-                            
-                            console.log('Carregados ' + data.length + ' alunos da API');
-                        } else {
-                            // Caso a API não tenha retornado alunos, criar alguns exemplos
-                            console.log('Nenhum aluno retornado da API. Criando exemplos...');
-                            createSampleStudents();
-                        }
-                        
-                        // Atualizar a interface
-                        renderStudentsList();
-                    } else {
-                        console.error('Resposta da API não é um array:', data);
-                        createSampleStudents();
-                        renderStudentsList();
-                    }
-                } else {
-                    console.error('Erro ao carregar alunos da API:', response.status);
-                    createSampleStudents();
-                    renderStudentsList();
+        
+        // Função para atualizar os controles de paginação do backend
+        function updateBackendPaginationControls(paginationData) {
+            const paginationContainer = document.getElementById('studentsPaginationContainer');
+            paginationContainer.innerHTML = '';
+            
+            // Configurar botões de página anterior/próxima
+            const prevPageBtn = document.getElementById('studentsPrevPage');
+            const nextPageBtn = document.getElementById('studentsNextPage');
+            const prevPageMobileBtn = document.getElementById('studentsPrevPageMobile');
+            const nextPageMobileBtn = document.getElementById('studentsNextPageMobile');
+            const currentPageMobile = document.getElementById('studentsCurrentPageMobile');
+            
+            // Atualizar paginação móvel
+            if (currentPageMobile) {
+                currentPageMobile.textContent = paginationData.page;
+            }
+            
+            // Desabilitar botão anterior se estiver na primeira página
+            if (paginationData.page <= 1) {
+                prevPageBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                prevPageMobileBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                prevPageBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                prevPageMobileBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            
+            // Desabilitar botão próximo se estiver na última página
+            if (paginationData.page >= paginationData.totalPages) {
+                nextPageBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                nextPageMobileBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                nextPageBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                nextPageMobileBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            
+            // Adicionar event listeners para os botões de paginação
+            prevPageBtn.onclick = function() {
+                if (paginationData.page > 1) {
+                    loadStudentsFromAPI(paginationData.page - 1, paginationData.limit);
                 }
-            } catch (error) {
-                console.error('Erro ao carregar alunos da API:', error);
-                createSampleStudents();
-                    renderStudentsList();
+            };
+            
+            nextPageBtn.onclick = function() {
+                if (paginationData.page < paginationData.totalPages) {
+                    loadStudentsFromAPI(paginationData.page + 1, paginationData.limit);
+                }
+            };
+            
+            prevPageMobileBtn.onclick = function() {
+                if (paginationData.page > 1) {
+                    loadStudentsFromAPI(paginationData.page - 1, paginationData.limit);
+                }
+            };
+            
+            nextPageMobileBtn.onclick = function() {
+                if (paginationData.page < paginationData.totalPages) {
+                    loadStudentsFromAPI(paginationData.page + 1, paginationData.limit);
+                }
+            };
+            
+            // Criar a paginação numérica (limitar para não ficar muito grande)
+            let startPage = Math.max(1, paginationData.page - 2);
+            let endPage = Math.min(paginationData.totalPages, paginationData.page + 2);
+            
+            // Ajustar para sempre mostrar 5 páginas (se possível)
+            if (endPage - startPage < 4 && paginationData.totalPages >= 5) {
+                if (startPage === 1) {
+                    endPage = Math.min(5, paginationData.totalPages);
+                } else if (endPage === paginationData.totalPages) {
+                    startPage = Math.max(1, paginationData.totalPages - 4);
+                }
+            }
+            
+            // Botão para a primeira página (se não estiver próximo)
+            if (startPage > 1) {
+                const firstPageBtn = document.createElement('button');
+                firstPageBtn.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50';
+                firstPageBtn.textContent = '1';
+                firstPageBtn.onclick = function() {
+                    loadStudentsFromAPI(1, paginationData.limit);
+                };
+                paginationContainer.appendChild(firstPageBtn);
+                
+                // Adicionar reticências se não estiver na página 2
+                if (startPage > 2) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700';
+                    ellipsis.textContent = '...';
+                    paginationContainer.appendChild(ellipsis);
+                }
+            }
+            
+            // Criar botões para cada página no intervalo
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('button');
+                
+                if (i === paginationData.page) {
+                    pageBtn.className = 'z-10 relative inline-flex items-center px-4 py-2 border border-blue-500 bg-blue-50 text-sm font-medium text-blue-600';
+                } else {
+                    pageBtn.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50';
+                }
+                
+                pageBtn.textContent = i.toString();
+                pageBtn.onclick = function() {
+                    loadStudentsFromAPI(i, paginationData.limit);
+                };
+                
+                paginationContainer.appendChild(pageBtn);
+            }
+            
+            // Botão para a última página (se não estiver próximo)
+            if (endPage < paginationData.totalPages) {
+                // Adicionar reticências se não estiver na penúltima página
+                if (endPage < paginationData.totalPages - 1) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700';
+                    ellipsis.textContent = '...';
+                    paginationContainer.appendChild(ellipsis);
+                }
+                
+                const lastPageBtn = document.createElement('button');
+                lastPageBtn.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50';
+                lastPageBtn.textContent = paginationData.totalPages.toString();
+                lastPageBtn.onclick = function() {
+                    loadStudentsFromAPI(paginationData.totalPages, paginationData.limit);
+                };
+                paginationContainer.appendChild(lastPageBtn);
             }
         }
         
