@@ -1403,23 +1403,7 @@
   </div>
 </div>
 <script>
-  function visualizarProva(provaId) {        console.log("ID da prova visualizada:", provaId);    const modal = document.getElementById('modalProva');        const loading = document.getElementById('loading');        const questoesContainer = document.getElementById('questoesContainer');            modal.classList.remove('hidden');        loading.classList.remove('hidden');        questoesContainer.innerHTML = '';      fetch(`https://sag-sag.rak8a3.easypanel.host/api/provas/${provaId}/questoes-detalhadas`)
-      .then(response => response.json())
-      .then(data => {
-        if (data.questoes && data.questoes.length > 0) {
-          questoesContainer.innerHTML = data.questoes.map((questao, index) => `
-            <div class="p-4 border rounded-lg">
-              <h4 class="font-semibold mb-2">Questão ${index + 1}: ${questao.titulo}</h4>
-              <p class="text-gray-600 mb-3">${questao.enunciado}</p>
-              <ul class="space-y-2">
-                ${questao.alternativas.map(alt => `
-                  <li class="${alt.correta ? 'bg-green-100 border-l-4 border-green-500' : ''} p-2 rounded">
-                    ${alt.texto}
-                  </li>
-                `).join('')}
-              </ul>
-            </div>
-          `).join('');
+    function visualizarProva(provaId) {    console.log("ID da prova visualizada:", provaId);    const modal = document.getElementById('modalProva');    const loading = document.getElementById('loading');    const questoesContainer = document.getElementById('questoesContainer');        modal.classList.remove('hidden');    loading.classList.remove('hidden');    questoesContainer.innerHTML = '';        fetch(`https://sag-sag.rak8a3.easypanel.host/api/provas/${provaId}/questoes-detalhadas`)      .then(response => response.json())      .then(data => {        if (data.questoes && data.questoes.length > 0) {          questoesContainer.innerHTML = data.questoes.map((questao, index) => `            <div class="p-4 border rounded-lg">              <h4 class="font-semibold mb-2">Questão ${index + 1}</h4>              <p class="text-gray-600 mb-3">${questao.enunciado}</p>              <ul class="space-y-2">                ${questao.alternativas.map(alt => `                  <li class="${alt.correta ? 'bg-green-100 border-l-4 border-green-500' : ''} p-2 rounded">                    ${alt.texto}                  </li>                `).join('')}              </ul>            </div>          `).join('');
         } else {
           questoesContainer.innerHTML = '<p class="text-center text-gray-500">Nenhuma questão encontrada</p>';
         }
