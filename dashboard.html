@@ -1233,7 +1233,7 @@
                 
                 if (classId !== 'all') params.append('turma_id', classId);
                 
-                // Adicionar parâmetro para resultados (high, low, all)
+                // Adicionar parâmetro para resultados apenas se não for "all"
                 if (results !== 'all') {
                     params.append('resultados', results === 'high' ? 'melhores' : 'criticos');
                 }
@@ -1431,14 +1431,26 @@
             const classFilter = document.getElementById('filterClass').value;
             const resultsFilter = document.getElementById('filterResults').value;
             
-            console.log('Filtros aplicados:', { 
-                regiao_id: regionFilter, 
-                grupo_id: groupFilter,
-                escola_id: schoolFilter, 
-                serie: gradeFilter,
-                turma_id: classFilter,
-                resultados: resultsFilter === 'all' ? 'all' : (resultsFilter === 'high' ? 'melhores' : 'criticos')
-            });
+            // Mostrar apenas os parâmetros que serão enviados para a API
+            const logParams = { 
+                regiao_id: regionFilter !== 'all' ? regionFilter : undefined, 
+                grupo_id: groupFilter !== 'all' ? groupFilter : undefined,
+                escola_id: schoolFilter !== 'all' ? schoolFilter : undefined, 
+                serie: gradeFilter !== 'all' ? gradeFilter : undefined,
+                turma_id: classFilter !== 'all' ? classFilter : undefined
+            };
+            
+            // Adicionar resultados apenas se não for "all"
+            if (resultsFilter !== 'all') {
+                logParams.resultados = resultsFilter === 'high' ? 'melhores' : 'criticos';
+            }
+            
+            // Filtrar valores indefinidos para melhor visualização
+            const cleanLogParams = Object.fromEntries(
+                Object.entries(logParams).filter(([_, v]) => v !== undefined)
+            );
+            
+            console.log('Filtros aplicados:', cleanLogParams);
             
             // Mostrar alerta visual de que filtros estão sendo aplicados
             const mainContent = document.querySelector('main');
@@ -1674,7 +1686,7 @@
                 
                 if (classId !== 'all') params.append('turma_id', classId);
                 
-                // Adicionar parâmetro para resultados (high, low, all)
+                // Adicionar parâmetro para resultados apenas se não for "all"
                 if (results !== 'all') {
                     params.append('resultados', results === 'high' ? 'melhores' : 'criticos');
                 }
@@ -2555,7 +2567,7 @@
                 
                 if (classId !== 'all') params.append('turma_id', classId);
                 
-                // Adicionar parâmetro para resultados (high, low, all)
+                // Adicionar parâmetro para resultados apenas se não for "all"
                 if (results !== 'all') {
                     params.append('resultados', results === 'high' ? 'melhores' : 'criticos');
                 }
@@ -2901,7 +2913,7 @@
                 
                 if (classId !== 'all') params.append('turma_id', classId);
                 
-                // Adicionar parâmetro para resultados (high, low, all)
+                // Adicionar parâmetro para resultados apenas se não for "all"
                 if (results !== 'all') {
                     params.append('resultados', results === 'high' ? 'melhores' : 'criticos');
                 }
@@ -3065,7 +3077,7 @@
                 
                 if (classId !== 'all') params.append('turma_id', classId);
                 
-                // Adicionar parâmetro para resultados (high, low, all)
+                // Adicionar parâmetro para resultados apenas se não for "all"
                 if (results !== 'all') {
                     params.append('resultados', results === 'high' ? 'melhores' : 'criticos');
                 }
