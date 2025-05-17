@@ -270,25 +270,80 @@
                     throw new Error(`Erro ao carregar turmas: ${response.status}`);
                 }
 
-                const classes = await response.json();
+                const data = await response.json();
+                console.log('API turmas response:', data); // Log para depuração
+                
+                // Garantir que classes seja um array
+                let classes = [];
+                
+                if (Array.isArray(data)) {
+                    classes = data;
+                } else if (data && typeof data === 'object') {
+                    // Tentar diferentes propriedades possíveis que possam conter o array de turmas
+                    if (Array.isArray(data.turmas)) classes = data.turmas;
+                    else if (Array.isArray(data.items)) classes = data.items;
+                    else if (Array.isArray(data.data)) classes = data.data;
+                    else if (Array.isArray(data.results)) classes = data.results;
+                    else if (Array.isArray(data.content)) classes = data.content;
+                    // Última tentativa: extrair todas as chaves que contenham objetos com propriedades necessárias
+                    else {
+                        classes = Object.values(data).filter(item => 
+                            item && typeof item === 'object' && item.nome && item.id
+                        );
+                    }
+                }
+                
+                // Log para depuração
+                console.log('Turmas encontradas:', classes);
+                console.log('É array?', Array.isArray(classes));
                 
                 // Resetar o select
                 classSelect.innerHTML = '<option value="">Selecione uma turma</option>';
                 
-                // Adicionar as turmas ordenadas por nome
-                classes
-                    .sort((a, b) => a.nome.localeCompare(b.nome))
-                    .forEach(cls => {
-                        const option = document.createElement('option');
-                        option.value = cls.id;
-                        option.textContent = cls.nome;
-                        classSelect.appendChild(option);
-                    });
-                
-                classSelect.disabled = false;
+                // Se temos turmas, ordenar e adicionar ao select
+                if (Array.isArray(classes) && classes.length > 0) {
+                    // Usar slice para criar uma cópia do array antes de ordenar
+                    const classesToSort = classes.slice();
+                    
+                    try {
+                        // Ordenar turmas por nome com tratamento de erro
+                        classesToSort.sort((a, b) => {
+                            const nameA = a && a.nome ? String(a.nome) : '';
+                            const nameB = b && b.nome ? String(b.nome) : '';
+                            return nameA.localeCompare(nameB);
+                        });
+                        
+                        // Adicionar as turmas ordenadas
+                        classesToSort.forEach(cls => {
+                            if (cls && cls.id && cls.nome) {
+                                const option = document.createElement('option');
+                                option.value = cls.id;
+                                option.textContent = cls.nome;
+                                classSelect.appendChild(option);
+                            }
+                        });
+                    } catch (sortError) {
+                        console.error('Erro ao ordenar turmas:', sortError);
+                        
+                        // Se falhar ao ordenar, adicionar sem ordenação
+                        classes.forEach(cls => {
+                            if (cls && cls.id && cls.nome) {
+                                const option = document.createElement('option');
+                                option.value = cls.id;
+                                option.textContent = cls.nome;
+                                classSelect.appendChild(option);
+                            }
+                        });
+                    }
+                    
+                    classSelect.disabled = false;
+                } else {
+                    classSelect.innerHTML = '<option value="">Nenhuma turma encontrada</option>';
+                    classSelect.disabled = true;
+                }
             } catch (error) {
                 console.error('Erro ao carregar turmas:', error);
-                classSelect.innerHTML = '<option value="">Erro ao carregar turmas</option>';
+                classSelect.innerHTML = '<option value="">Erro ao carregar turmas: ' + error.message + '</option>';
                 classSelect.disabled = true;
             }
         }
@@ -321,25 +376,80 @@
                     throw new Error(`Erro ao carregar provas: ${response.status}`);
                 }
 
-                const exams = await response.json();
+                const data = await response.json();
+                console.log('API provas response:', data); // Log para depuração
+                
+                // Garantir que exams seja um array
+                let exams = [];
+                
+                if (Array.isArray(data)) {
+                    exams = data;
+                } else if (data && typeof data === 'object') {
+                    // Tentar diferentes propriedades possíveis que possam conter o array de provas
+                    if (Array.isArray(data.provas)) exams = data.provas;
+                    else if (Array.isArray(data.items)) exams = data.items;
+                    else if (Array.isArray(data.data)) exams = data.data;
+                    else if (Array.isArray(data.results)) exams = data.results;
+                    else if (Array.isArray(data.content)) exams = data.content;
+                    // Última tentativa: extrair todas as chaves que contenham objetos com propriedades necessárias
+                    else {
+                        exams = Object.values(data).filter(item => 
+                            item && typeof item === 'object' && (item.nome || item.name) && item.id
+                        );
+                    }
+                }
+                
+                // Log para depuração
+                console.log('Provas encontradas:', exams);
+                console.log('É array?', Array.isArray(exams));
                 
                 // Resetar o select
                 examSelect.innerHTML = '<option value="">Selecione uma prova</option>';
                 
-                // Adicionar as provas ordenadas por nome
-                exams
-                    .sort((a, b) => a.nome.localeCompare(b.nome))
-                    .forEach(exam => {
-                        const option = document.createElement('option');
-                        option.value = exam.id;
-                        option.textContent = exam.nome;
-                        examSelect.appendChild(option);
-                    });
-                
-                examSelect.disabled = false;
+                // Se temos provas, ordenar e adicionar ao select
+                if (Array.isArray(exams) && exams.length > 0) {
+                    // Usar slice para criar uma cópia do array antes de ordenar
+                    const examsToSort = exams.slice();
+                    
+                    try {
+                        // Ordenar provas por nome com tratamento de erro
+                        examsToSort.sort((a, b) => {
+                            const nameA = a && (a.nome || a.name) ? String(a.nome || a.name) : '';
+                            const nameB = b && (b.nome || b.name) ? String(b.nome || b.name) : '';
+                            return nameA.localeCompare(nameB);
+                        });
+                        
+                        // Adicionar as provas ordenadas
+                        examsToSort.forEach(exam => {
+                            if (exam && exam.id && (exam.nome || exam.name)) {
+                                const option = document.createElement('option');
+                                option.value = exam.id;
+                                option.textContent = exam.nome || exam.name;
+                                examSelect.appendChild(option);
+                            }
+                        });
+                    } catch (sortError) {
+                        console.error('Erro ao ordenar provas:', sortError);
+                        
+                        // Se falhar ao ordenar, adicionar sem ordenação
+                        exams.forEach(exam => {
+                            if (exam && exam.id && (exam.nome || exam.name)) {
+                                const option = document.createElement('option');
+                                option.value = exam.id;
+                                option.textContent = exam.nome || exam.name;
+                                examSelect.appendChild(option);
+                            }
+                        });
+                    }
+                    
+                    examSelect.disabled = false;
+                } else {
+                    examSelect.innerHTML = '<option value="">Nenhuma prova encontrada</option>';
+                    examSelect.disabled = true;
+                }
             } catch (error) {
                 console.error('Erro ao carregar provas:', error);
-                examSelect.innerHTML = '<option value="">Erro ao carregar provas</option>';
+                examSelect.innerHTML = '<option value="">Erro ao carregar provas: ' + error.message + '</option>';
                 examSelect.disabled = true;
             }
         }
@@ -371,7 +481,11 @@
                     throw new Error(`Erro ao carregar detalhes da prova: ${examResponse.status}`);
                 }
 
-                currentExam = await examResponse.json();
+                const examData = await examResponse.json();
+                console.log('API prova response:', examData);
+                
+                // Garantir que temos uma estrutura válida para a prova
+                currentExam = examData;
 
                 // Buscar alunos da turma
                 const studentsResponse = await fetch(`https://sag-sag.rak8a3.easypanel.host/api/alunos?turma_id=${currentClassId}`, {
@@ -385,14 +499,41 @@
                     throw new Error(`Erro ao carregar alunos: ${studentsResponse.status}`);
                 }
 
-                currentClassStudents = await studentsResponse.json();
+                const studentsData = await studentsResponse.json();
+                console.log('API alunos response:', studentsData);
+                
+                // Garantir que students é um array
+                let students = [];
+                
+                if (Array.isArray(studentsData)) {
+                    students = studentsData;
+                } else if (studentsData && typeof studentsData === 'object') {
+                    // Tentar diferentes propriedades possíveis
+                    if (Array.isArray(studentsData.alunos)) students = studentsData.alunos;
+                    else if (Array.isArray(studentsData.items)) students = studentsData.items;
+                    else if (Array.isArray(studentsData.data)) students = studentsData.data;
+                    else if (Array.isArray(studentsData.results)) students = studentsData.results;
+                    else if (Array.isArray(studentsData.content)) students = studentsData.content;
+                    // Última tentativa: extrair todas as chaves que contenham objetos com propriedade 'name' ou 'nome'
+                    else {
+                        students = Object.values(studentsData).filter(item => 
+                            item && typeof item === 'object' && (item.name || item.nome) && item.id
+                        );
+                    }
+                }
+                
+                currentClassStudents = students;
                 
                 if (currentExam && currentClassStudents.length > 0) {
                     actionSection.classList.remove('hidden');
                     generatePdfBtn.disabled = false;
                     
+                    // Verificar se questoes existe e é um array, caso contrário tratar como array vazio
+                    const questionCount = Array.isArray(currentExam.questoes) ? currentExam.questoes.length : 
+                        (currentExam.questions && Array.isArray(currentExam.questions)) ? currentExam.questions.length : 0;
+                    
                     studentCountMsg.textContent = `${currentClassStudents.length} aluno(s) encontrado(s)`;
-                    examInfoMsg.textContent = `Prova selecionada: ${currentExam.nome} - ${currentExam.questoes?.length || 0} questões`;
+                    examInfoMsg.textContent = `Prova selecionada: ${currentExam.nome || currentExam.name} - ${questionCount} questões`;
                 } else {
                     actionSection.classList.add('hidden');
                     generatePdfBtn.disabled = true;
@@ -474,25 +615,80 @@
                         throw new Error(`Erro ao carregar escolas: ${response.status}`);
                     }
 
-                    const schools = await response.json();
+                    const data = await response.json();
+                    console.log('API response:', data); // Log para depuração
+                    
+                    // Garantir que schools seja um array
+                    let schools = [];
+                    
+                    if (Array.isArray(data)) {
+                        schools = data;
+                    } else if (data && typeof data === 'object') {
+                        // Tentar diferentes propriedades possíveis que possam conter o array de escolas
+                        if (Array.isArray(data.escolas)) schools = data.escolas;
+                        else if (Array.isArray(data.items)) schools = data.items;
+                        else if (Array.isArray(data.data)) schools = data.data;
+                        else if (Array.isArray(data.results)) schools = data.results;
+                        else if (Array.isArray(data.content)) schools = data.content;
+                        // Última tentativa: extrair todas as chaves que contenham objetos com propriedade 'nome'
+                        else {
+                            schools = Object.values(data).filter(item => 
+                                item && typeof item === 'object' && item.nome && item.id
+                            );
+                        }
+                    }
+                    
+                    // Log para depuração
+                    console.log('Escolas encontradas:', schools);
+                    console.log('É array?', Array.isArray(schools));
                     
                     // Resetar o select
                     schoolSelect.innerHTML = '<option value="">Selecione uma escola</option>';
                     
-                    // Adicionar as escolas ordenadas por nome
-                    schools
-                        .sort((a, b) => a.nome.localeCompare(b.nome))
-                        .forEach(school => {
-                            const option = document.createElement('option');
-                            option.value = school.id;
-                            option.textContent = school.nome;
-                            schoolSelect.appendChild(option);
-                        });
-                    
-                    schoolSelect.disabled = false;
+                    // Se temos escolas, ordenar e adicionar ao select
+                    if (Array.isArray(schools) && schools.length > 0) {
+                        // Usar slice para criar uma cópia do array antes de ordenar
+                        const schoolsToSort = schools.slice();
+                        
+                        try {
+                            // Ordenar escolas por nome com tratamento de erro
+                            schoolsToSort.sort((a, b) => {
+                                const nameA = a && a.nome ? String(a.nome) : '';
+                                const nameB = b && b.nome ? String(b.nome) : '';
+                                return nameA.localeCompare(nameB);
+                            });
+                            
+                            // Adicionar as escolas ordenadas
+                            schoolsToSort.forEach(school => {
+                                if (school && school.id && school.nome) {
+                                    const option = document.createElement('option');
+                                    option.value = school.id;
+                                    option.textContent = school.nome;
+                                    schoolSelect.appendChild(option);
+                                }
+                            });
+                        } catch (sortError) {
+                            console.error('Erro ao ordenar escolas:', sortError);
+                            
+                            // Se falhar ao ordenar, adicionar sem ordenação
+                            schools.forEach(school => {
+                                if (school && school.id && school.nome) {
+                                    const option = document.createElement('option');
+                                    option.value = school.id;
+                                    option.textContent = school.nome;
+                                    schoolSelect.appendChild(option);
+                                }
+                            });
+                        }
+                        
+                        schoolSelect.disabled = false;
+                    } else {
+                        schoolSelect.innerHTML = '<option value="">Nenhuma escola encontrada</option>';
+                        schoolSelect.disabled = true;
+                    }
                 } catch (error) {
                     console.error('Erro ao carregar escolas:', error);
-                    schoolSelect.innerHTML = '<option value="">Erro ao carregar escolas</option>';
+                    schoolSelect.innerHTML = '<option value="">Erro ao carregar escolas: ' + error.message + '</option>';
                     schoolSelect.disabled = true;
                 }
             }
@@ -784,7 +980,7 @@
                         } catch (error) {
                             reject(new Error('Erro ao processar QR code: ' + error.message));
                         }
-                    }, 1500); // Simular processamento de 1.5 segundos
+                    }, 1500);
                 });
             }
 
