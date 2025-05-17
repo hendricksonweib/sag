@@ -65,9 +65,31 @@
                         </h1>
                         <p class="mt-1 max-w-2xl text-sm text-gray-500 ml-12">Gerenciamento de escolas</p>
                     </div>
-                    <button id="addSchoolBtn" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 transform hover:-translate-y-0.5">
-                        <i class="fas fa-plus mr-2"></i> Nova Escola
-                    </button>
+                    <div>
+                        <button id="addSchoolBtn" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 transform hover:-translate-y-0.5">
+                            <i class="fas fa-plus mr-2"></i> Nova Escola
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Search section -->
+                <div class="px-4 py-4 sm:px-6 bg-white shadow rounded-lg mb-6">
+                    <div class="mb-2">
+                        <label for="schoolSearch" class="block text-sm font-medium text-gray-700">Buscar Escolas</label>
+                    </div>
+                    <div class="flex space-x-2">
+                        <div class="flex-1">
+                            <div class="relative rounded-md shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </div>
+                                <input type="text" id="schoolSearch" class="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="Digite o nome da escola...">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center" id="searchClearBtn" style="display: none; cursor: pointer;">
+                                    <i class="fas fa-times-circle text-gray-400 hover:text-gray-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Schools List -->
@@ -453,22 +475,27 @@
         let currentPage = 1;
         const itemsPerPage = 10;
         let totalPages = 1;
+        
+        // Variáveis para armazenar todas as escolas e escolas filtradas
+        let allSchools = [];
 
         // Função para obter escolas do localStorage
         function getSchools() {
             return JSON.parse(localStorage.getItem('schools')) || [];
         }
-
-        // Função para renderizar a lista de escolas
-        function renderSchoolsList() {
+        
+        // Função para renderizar a lista de escolas com filtro opcional
+        function renderSchoolsList(filteredSchools = null) {
             const schoolsList = document.getElementById('schoolsList');
-            const schools = getSchools();
+            const schools = filteredSchools || getSchools();
+            allSchools = getSchools(); // Manter cópia de todas as escolas
+            
             const paginationControls = document.getElementById('paginationControls');
             
             if (schools.length === 0) {
                 schoolsList.innerHTML = `
                     <li class="px-4 py-4 sm:px-6 text-center text-gray-500">
-                        Nenhuma escola cadastrada
+                        ${filteredSchools ? 'Nenhuma escola encontrada com esse nome' : 'Nenhuma escola cadastrada'}
                     </li>`;
                 paginationControls.classList.add('hidden');
                 return;
@@ -564,6 +591,37 @@
                 });
             });
         }
+        
+        // Função para filtrar escolas conforme digitação
+        function filterSchools(searchTerm) {
+            if (!searchTerm.trim()) {
+                // Se a busca estiver vazia, mostrar todas as escolas
+                currentPage = 1; // Resetar para primeira página
+                renderSchoolsList();
+                return;
+            }
+            
+            // Converter para minúsculo para comparação case-insensitive
+            const searchTermLower = searchTerm.toLowerCase();
+            
+            // Filtrar escolas que contêm o termo de busca no nome
+            const filteredSchools = allSchools.filter(school => 
+                school.name && school.name.toLowerCase().includes(searchTermLower)
+            );
+            
+            // Resetar para primeira página quando filtrar
+            currentPage = 1;
+            
+            // Renderizar apenas as escolas filtradas
+            renderSchoolsList(filteredSchools);
+            
+            // Se houver escolas encontradas, mostrar feedback
+            if (filteredSchools.length > 0) {
+                showToast(`Encontradas ${filteredSchools.length} escolas com "${searchTerm}"`, 'success');
+            } else {
+                showToast(`Nenhuma escola encontrada com "${searchTerm}"`, 'info');
+            }
+        }
 
         // Função para renderizar números das páginas
         function renderPageNumbers() {
@@ -610,7 +668,14 @@
                 pageButton.textContent = pageNum;
                 pageButton.addEventListener('click', () => {
                     currentPage = pageNum;
-                    renderSchoolsList();
+                    
+                    // Re-filtrar se houver termo de busca
+                    const searchTerm = document.getElementById('schoolSearch')?.value || '';
+                    if (searchTerm.trim()) {
+                        filterSchools(searchTerm);
+                    } else {
+                        renderSchoolsList();
+                    }
                 });
                 pageNumbersContainer.appendChild(pageButton);
             }
@@ -625,34 +690,92 @@
 
         // Adicionar event listeners para os botões de navegação
         document.addEventListener('DOMContentLoaded', function() {
-            // ... código existente ...
-
+            // Código existente...
+            
+            // Carregar escolas da API
+            loadSchoolsFromAPI();
+            
             // Event listeners para navegação de páginas
             document.getElementById('prevPageBtn').addEventListener('click', () => {
                 if (currentPage > 1) {
                     currentPage--;
-                    renderSchoolsList();
+                    // Re-filtrar se houver termo de busca
+                    const searchTerm = document.getElementById('schoolSearch')?.value || '';
+                    if (searchTerm.trim()) {
+                        filterSchools(searchTerm);
+                    } else {
+                        renderSchoolsList();
+                    }
                 }
             });
 
             document.getElementById('nextPageBtn').addEventListener('click', () => {
                 if (currentPage < totalPages) {
                     currentPage++;
-                    renderSchoolsList();
+                    // Re-filtrar se houver termo de busca
+                    const searchTerm = document.getElementById('schoolSearch')?.value || '';
+                    if (searchTerm.trim()) {
+                        filterSchools(searchTerm);
+                    } else {
+                        renderSchoolsList();
+                    }
                 }
             });
 
             document.getElementById('prevPageBtnMobile').addEventListener('click', () => {
                 if (currentPage > 1) {
                     currentPage--;
-                    renderSchoolsList();
+                    // Re-filtrar se houver termo de busca
+                    const searchTerm = document.getElementById('schoolSearch')?.value || '';
+                    if (searchTerm.trim()) {
+                        filterSchools(searchTerm);
+                    } else {
+                        renderSchoolsList();
+                    }
                 }
             });
 
             document.getElementById('nextPageBtnMobile').addEventListener('click', () => {
                 if (currentPage < totalPages) {
                     currentPage++;
-                    renderSchoolsList();
+                    // Re-filtrar se houver termo de busca
+                    const searchTerm = document.getElementById('schoolSearch')?.value || '';
+                    if (searchTerm.trim()) {
+                        filterSchools(searchTerm);
+                    } else {
+                        renderSchoolsList();
+                    }
+                }
+            });
+            
+            // Configurar barra de pesquisa
+            const searchInput = document.getElementById('schoolSearch');
+            const clearSearchBtn = document.getElementById('searchClearBtn');
+            
+            // Filtrar em tempo real conforme digitação
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.trim();
+                
+                // Mostrar/ocultar botão de limpar
+                clearSearchBtn.style.display = searchTerm ? 'flex' : 'none';
+                
+                // Filtrar escolas em tempo real
+                filterSchools(searchTerm);
+            });
+            
+            // Limpar busca ao clicar no X
+            clearSearchBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                clearSearchBtn.style.display = 'none';
+                currentPage = 1;
+                renderSchoolsList(); // Mostrar todas as escolas
+            });
+            
+            // Evitar refresh da página ao pressionar Enter
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    filterSchools(this.value.trim());
                 }
             });
         });
