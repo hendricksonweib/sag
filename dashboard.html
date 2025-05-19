@@ -2853,16 +2853,38 @@
                         
                         // Formatar os dados para o formato usado pela UI
                         filteredRanking = content.map((student, index) => {
+                            // Função para validar e converter valores numéricos
+                            const getValidNumber = (value) => {
+                                // Se for null ou undefined, retorna null (que será exibido como N/A)
+                                if (value === null || value === undefined) return null;
+                                
+                                // Se for número, retorna diretamente
+                                if (typeof value === 'number' && !isNaN(value)) return value;
+                                
+                                // Se for string, tenta converter para número
+                                if (typeof value === 'string') {
+                                    const parsed = parseFloat(value);
+                                    if (!isNaN(parsed)) return parsed;
+                                }
+                                
+                                // Caso contrário, retorna null
+                                return null;
+                            };
+                            
+                            // Processar os valores numéricos - usar media_geral em vez de media
+                            const media = getValidNumber(student.media_geral);
+                            const maiorNota = getValidNumber(student.maior_nota);
+                            const menorNota = getValidNumber(student.menor_nota);
+                            
                             return {
                                 id: student.aluno_id,
-                                name: student.nome || student.aluno_nome || 'Sem nome',
+                                name: student.aluno_nome || student.nome || 'Sem nome',
                                 className: student.turma_nome || student.turma || 'N/A',
                                 schoolName: student.escola_nome || 'N/A',
-                                performance: student.media !== null ? student.media : 'N/A',
-                                totalEvaluations: student.total_avaliacoes || 0,
-                                // Se não tivermos maior/menor notas na resposta, usar a média para ambos
-                                highestGrade: student.maior_nota !== undefined ? student.maior_nota : student.media,
-                                lowestGrade: student.menor_nota !== undefined ? student.menor_nota : student.media
+                                performance: media, // Pode ser um número ou null
+                                totalEvaluations: student.total_desempenhos || 0,
+                                highestGrade: maiorNota, // Pode ser um número ou null
+                                lowestGrade: menorNota // Pode ser um número ou null
                             };
                         });
                         
@@ -2875,16 +2897,38 @@
                         
                         // Formatar os dados para o formato usado pela UI
                         const formattedRanking = data.map((student, index) => {
+                            // Função para validar e converter valores numéricos
+                            const getValidNumber = (value) => {
+                                // Se for null ou undefined, retorna null (que será exibido como N/A)
+                                if (value === null || value === undefined) return null;
+                                
+                                // Se for número, retorna diretamente
+                                if (typeof value === 'number' && !isNaN(value)) return value;
+                                
+                                // Se for string, tenta converter para número
+                                if (typeof value === 'string') {
+                                    const parsed = parseFloat(value);
+                                    if (!isNaN(parsed)) return parsed;
+                                }
+                                
+                                // Caso contrário, retorna null
+                                return null;
+                            };
+                            
+                            // Processar os valores numéricos - usar media_geral em vez de media
+                            const media = getValidNumber(student.media_geral);
+                            const maiorNota = getValidNumber(student.maior_nota);
+                            const menorNota = getValidNumber(student.menor_nota);
+                            
                             return {
                                 id: student.aluno_id,
-                                name: student.nome || student.aluno_nome || 'Sem nome',
+                                name: student.aluno_nome || student.nome || 'Sem nome',
                                 className: student.turma_nome || student.turma || 'N/A',
                                 schoolName: student.escola_nome || 'N/A',
-                                performance: student.media !== null ? student.media : 'N/A',
-                                totalEvaluations: student.total_avaliacoes || 0,
-                                // Se não tivermos maior/menor notas na resposta, usar a média para ambos
-                                highestGrade: student.maior_nota !== undefined ? student.maior_nota : student.media,
-                                lowestGrade: student.menor_nota !== undefined ? student.menor_nota : student.media
+                                performance: media, // Pode ser um número ou null
+                                totalEvaluations: student.total_desempenhos || 0,
+                                highestGrade: maiorNota, // Pode ser um número ou null
+                                lowestGrade: menorNota // Pode ser um número ou null
                             };
                         });
                         
@@ -2977,14 +3021,15 @@
                     positionClass = 'bg-yellow-50 font-bold';
                 }
                 
-                // Definir classe de desempenho
+                // Definir classe de desempenho e display
                 let performanceClass = '';
                 let performanceDisplay = '';
                 
-                if (student.performance === 'N/A') {
+                if (student.performance === null) {
                     performanceClass = 'text-gray-500';
                     performanceDisplay = 'N/A';
                 } else {
+                    // Já temos certeza que é um número válido
                     if (student.performance >= 70) {
                         performanceClass = 'text-green-600';
                     } else if (student.performance < 60) {
@@ -2996,8 +3041,8 @@
                 }
                 
                 // Preparar dados de maior/menor nota
-                const highestGradeDisplay = student.highestGrade !== null ? `${student.highestGrade}%` : 'N/A';
-                const lowestGradeDisplay = student.lowestGrade !== null ? `${student.lowestGrade}%` : 'N/A';
+                let highestGradeDisplay = student.highestGrade !== null ? `${student.highestGrade}%` : 'N/A';
+                let lowestGradeDisplay = student.lowestGrade !== null ? `${student.lowestGrade}%` : 'N/A';
                 
                 // Definir cores para maior/menor nota
                 let highestGradeClass = '';
@@ -3043,7 +3088,7 @@
                             `<span class="text-xs text-gray-500 ml-1">(${student.totalEvaluations} avaliações)</span>` : ''}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${student.highestGrade !== null ? `${student.highestGrade}%` : 'N/A'} / ${student.lowestGrade !== null ? `${student.lowestGrade}%` : 'N/A'}
+                        ${highestGradeDisplay} / ${lowestGradeDisplay}
                     </td>
                 `;
                 
