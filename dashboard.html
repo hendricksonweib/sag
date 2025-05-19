@@ -623,14 +623,14 @@
                     const data = await response.json();
                     console.log('Estatísticas gerais carregadas com sucesso:', data);
                     
-                    // Atualizar contadores com os dados da API
-                    document.getElementById('schoolCount').textContent = data.escolas_participantes || 0;
-                    document.getElementById('classCount').textContent = data.turmas_participantes || 0;
-                    document.getElementById('studentCount').textContent = data.alunos_participantes || 0;
-                    document.getElementById('examCount').textContent = data.provas_respondidas || 0;
+                    // Atualizar contadores com os dados da API usando os nomes de campo corretos
+                    document.getElementById('schoolCount').textContent = data.total_escolas || 0;
+                    document.getElementById('classCount').textContent = data.total_turmas || 0;
+                    document.getElementById('studentCount').textContent = data.total_alunos || 0;
+                    document.getElementById('examCount').textContent = data.total_provas || 0;
                     
-                    // Atualizar a taxa de participação
-                    const participationRate = data.participacao !== null ? `${data.participacao}%` : '0%';
+                    // Atualizar a taxa de participação - converter para porcentagem (multiplicar por 100)
+                    const participationRate = data.participacao !== null ? `${(data.participacao * 100).toFixed(2)}%` : '0%';
                     document.getElementById('participationRate').textContent = participationRate;
                     
                     return data;
@@ -650,16 +650,16 @@
             
             try {
                 // Atualizar os contadores com os dados da API se estiverem disponíveis
-                if (stats.totalAlunos !== undefined) {
-                    document.getElementById('studentCount').textContent = stats.totalAlunos;
+                if (stats.total_alunos !== undefined) {
+                    document.getElementById('studentCount').textContent = stats.total_alunos;
                 }
                 
-                if (stats.totalProvas !== undefined) {
-                    document.getElementById('examCount').textContent = stats.totalProvas;
+                if (stats.total_provas !== undefined) {
+                    document.getElementById('examCount').textContent = stats.total_provas;
                 }
                 
-                if (stats.totalParticipacao !== undefined) {
-                    document.getElementById('participationRate').textContent = `${stats.totalParticipacao}%`;
+                if (stats.participacao !== undefined) {
+                    document.getElementById('participationRate').textContent = `${(stats.participacao * 100).toFixed(2)}%`;
                 }
                 
                 console.log('Estatísticas da API atualizadas com sucesso');
