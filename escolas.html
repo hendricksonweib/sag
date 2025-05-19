@@ -923,8 +923,7 @@
                 apiId: apiId // Armazenar o ID da API se fornecido
             };
             
-            // Adicionar a nova escola no início do array para aparecer primeiro na listagem
-            schools.unshift(newSchool);
+            schools.push(newSchool);
             localStorage.setItem('schools', JSON.stringify(schools));
             return newSchool;
         }
@@ -1030,8 +1029,8 @@
                 const result = await response.json();
                 console.log('Escolas carregadas da API:', result);
                 
-                // Não vamos limpar as escolas existentes, apenas atualizar/adicionar
-                // Isso permite que a verificação de duplicação na função addSchool funcione
+                // MUDANÇA: Limpar completamente as escolas existentes antes de adicionar novas escolas da API
+                localStorage.setItem('schools', JSON.stringify([]));
                 
                 // Verificar se temos o novo formato de resposta com paginação
                 if (result && result.data && Array.isArray(result.data)) {
