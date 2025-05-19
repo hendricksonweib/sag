@@ -629,9 +629,8 @@
                     document.getElementById('studentCount').textContent = data.total_alunos || 0;
                     document.getElementById('examCount').textContent = data.total_provas || 0;
                     
-                    // Atualizar a taxa de participação - converter para porcentagem (multiplicar por 100)
-                    const participationRate = data.participacao !== null ? `${(data.participacao * 100).toFixed(2)}%` : '0%';
-                    document.getElementById('participationRate').textContent = participationRate;
+                    // Exibir o valor da participação exatamente como está no JSON
+                    document.getElementById('participationRate').textContent = data.participacao !== null ? data.participacao : 0;
                     
                     return data;
                 } else {
@@ -659,7 +658,7 @@
                 }
                 
                 if (stats.participacao !== undefined) {
-                    document.getElementById('participationRate').textContent = `${(stats.participacao * 100).toFixed(2)}%`;
+                    document.getElementById('participationRate').textContent = stats.participacao;
                 }
                 
                 console.log('Estatísticas da API atualizadas com sucesso');
@@ -3563,8 +3562,8 @@
                 // Atualmente, esta é apenas uma estimativa com base no número de alunos e provas
                 
                 // Em uma implementação real, este cálculo seria baseado em dados de presença real
-                // Por enquanto, vamos simplesmente retornar um valor entre 70% e 95%
-                return Math.floor(Math.random() * 25 + 70);
+                // Por enquanto, vamos simplesmente retornar um valor entre 0.7 e 0.95
+                return (Math.floor(Math.random() * 25 + 70) / 100);
             } catch (error) {
                 console.error('Erro ao calcular taxa de participação:', error);
                 return 0;
