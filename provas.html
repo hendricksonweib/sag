@@ -8698,8 +8698,8 @@
             // Carregar questões da API
             loadQuestionsForExam(apiId)
                 .then(questions => {
-                    // Atualizar contador
-                    document.getElementById("questionCountDisplay").textContent = `${questions.length} questões encontradas`;
+                    // Atualizar contador usando optional chaining para evitar erros
+                    document.getElementById("questionCountDisplay").textContent = `${questions?.length ?? 0} questões encontradas`;
                     
                     // Renderizar lista de questões
                     renderQuestionsList(questions, apiId);
@@ -8750,7 +8750,16 @@
                     throw new Error(`Erro ao carregar questões. Status: ${response.status}. Detalhes: ${errorText}`);
                 }
                 
-                                const data = await response.json();                                // The API now returns an object with a "questoes" property                if (data.questoes && Array.isArray(data.questoes)) {                    console.log(`Recebidas ${data.questoes.length} questões da API:`, data.questoes);                    return data.questoes;                } else {                    console.log(`Resposta da API sem formato esperado:`, data);                    // If for some reason the API response format changes again, try to handle it gracefully                    return Array.isArray(data) ? data : [];                }
+                const data = await response.json();
+                
+                // Validar se data.questoes existe e é um array
+                if (!data.questoes || !Array.isArray(data.questoes)) {
+                    console.error("Resposta da API não contém um array de questões válido:", data);
+                    return [];
+                }
+                
+                console.log(`Recebidas ${data.questoes?.length ?? 0} questões da API:`, data.questoes);
+                return data.questoes;
             } catch (error) {
                 console.error("Erro ao carregar questões da API:", error);
                 throw error;
@@ -8761,8 +8770,8 @@
         function renderQuestionsList(questions, examId) {
             const questionsList = document.getElementById("questionsList");
             
-            // Se não houver questões, mostrar mensagem
-            if (!questions || questions.length === 0) {
+            // Validar se questions é um array
+            if (!questions || !Array.isArray(questions) || questions.length === 0) {
                 questionsList.innerHTML = `
                     <div class="py-4 text-center text-gray-500">
                         Nenhuma questão encontrada para esta prova.
