@@ -316,10 +316,10 @@
                         // Adicionar as turmas ordenadas
                         classesToSort.forEach(cls => {
                             if (cls && cls.id && cls.nome) {
-                                const option = document.createElement('option');
-                                option.value = cls.id;
-                                option.textContent = cls.nome;
-                                classSelect.appendChild(option);
+                        const option = document.createElement('option');
+                        option.value = cls.id;
+                        option.textContent = cls.nome;
+                        classSelect.appendChild(option);
                             }
                         });
                     } catch (sortError) {
@@ -333,10 +333,10 @@
                                 option.textContent = cls.nome;
                                 classSelect.appendChild(option);
                             }
-                        });
+                    });
                     }
-                    
-                    classSelect.disabled = false;
+                
+                classSelect.disabled = false;
                 } else {
                     classSelect.innerHTML = '<option value="">Nenhuma turma encontrada</option>';
                     classSelect.disabled = true;
@@ -422,10 +422,10 @@
                         // Adicionar as provas ordenadas
                         examsToSort.forEach(exam => {
                             if (exam && exam.id && (exam.nome || exam.name)) {
-                                const option = document.createElement('option');
-                                option.value = exam.id;
+                        const option = document.createElement('option');
+                        option.value = exam.id;
                                 option.textContent = exam.nome || exam.name;
-                                examSelect.appendChild(option);
+                        examSelect.appendChild(option);
                             }
                         });
                     } catch (sortError) {
@@ -439,10 +439,10 @@
                                 option.textContent = exam.nome || exam.name;
                                 examSelect.appendChild(option);
                             }
-                        });
+                    });
                     }
-                    
-                    examSelect.disabled = false;
+                
+                examSelect.disabled = false;
                 } else {
                     examSelect.innerHTML = '<option value="">Nenhuma prova encontrada</option>';
                     examSelect.disabled = true;
@@ -661,10 +661,10 @@
                             // Adicionar as escolas ordenadas
                             schoolsToSort.forEach(school => {
                                 if (school && school.id && school.nome) {
-                                    const option = document.createElement('option');
-                                    option.value = school.id;
-                                    option.textContent = school.nome;
-                                    schoolSelect.appendChild(option);
+                            const option = document.createElement('option');
+                            option.value = school.id;
+                            option.textContent = school.nome;
+                            schoolSelect.appendChild(option);
                                 }
                             });
                         } catch (sortError) {
@@ -678,10 +678,10 @@
                                     option.textContent = school.nome;
                                     schoolSelect.appendChild(option);
                                 }
-                            });
+                        });
                         }
-                        
-                        schoolSelect.disabled = false;
+                    
+                    schoolSelect.disabled = false;
                     } else {
                         schoolSelect.innerHTML = '<option value="">Nenhuma escola encontrada</option>';
                         schoolSelect.disabled = true;

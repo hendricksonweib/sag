@@ -911,15 +911,15 @@
                         if (turmasData.length > 0) {
                             turmasData.forEach(turma => {
                                 console.log("Dados da turma recebida da API:", turma);
-                                addClass(
-                                    turma.nome,
-                                    turma.serie,
-                                    turma.escola_id,
-                                    turma.turno,
-                                    turma.id
-                                );
-                            });
-                            
+                            addClass(
+                                turma.nome,
+                                turma.serie,
+                                turma.escola_id,
+                                turma.turno,
+                                turma.id
+                            );
+                        });
+                        
                             console.log('Carregadas ' + turmasData.length + ' turmas da API (página ' + 
                                       responseData.page + ' de ' + responseData.totalPages + 
                                       ', total: ' + responseData.total + ' turmas)');
@@ -953,8 +953,8 @@
                             });
                             
                             // Renderizar a lista normalmente
-                            renderClassesList();
-                        } else {
+                        renderClassesList();
+                    } else {
                             console.error('Formato da resposta da API não é o esperado:', responseData);
                         }
                     }
@@ -1039,24 +1039,24 @@
                                 <span class="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
                                     <i class="fas fa-users text-green-600 text-lg"></i>
                                 </span>
-                            </div>
+                        </div>
                             <div class="min-w-0 flex-1 px-4">
-                                <div>
+                            <div>
                                     <p class="text-sm font-medium text-blue-600 truncate">${turma.nome}</p>
                                     <p class="mt-1 text-sm text-gray-500">
                                         Escola: ${schoolName} | Série: ${seriesDisplay} | Turno: ${shiftDisplay}
                                     </p>
-                                </div>
                             </div>
-                        </div>
-                        <div>
+                            </div>
+                            </div>
+                            <div>
                             <button class="text-indigo-600 hover:text-indigo-900 editClass" data-id="${turma.id}" title="Editar Turma">
                                 <i class="fas fa-edit"></i>
-                            </button>
+                                </button>
                             <button class="ml-4 text-red-600 hover:text-red-900 deleteClass" data-id="${turma.id}" title="Excluir Turma">
                                 <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
+                                </button>
+                            </div>
                     </div>
                 `;
                 
