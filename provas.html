@@ -7943,7 +7943,7 @@
                     console.log("As questões não estão completas, buscando detalhes adicionais...");
                             try {
                                 // Buscar todas as questões da prova usando a API dedicada
-                                const questionsUrl = `https://sag-sag.rak8a3.easypanel.host/api/provas/${examId}/questoes`;
+                                const questionsUrl = `https://sag-sag.rak8a3.easypanel.host/api/provas/${examId}/questoes-detalhadas`;
                                 const questionsResponse = await fetch(questionsUrl, {
                                     method: "GET",
                                     headers: {
@@ -8040,7 +8040,7 @@
                     
                     // Tentar buscar questões especificamente
                     try {
-                        const questionsUrl = `https://sag-sag.rak8a3.easypanel.host/api/provas/${examId}/questoes`;
+                        const questionsUrl = `https://sag-sag.rak8a3.easypanel.host/api/provas/${examId}/questoes-detalhadas`;
                         console.log(`Buscando questões na endpoint específica: ${questionsUrl}`);
                         
                         const questionsResponse = await fetch(questionsUrl, {
@@ -8738,7 +8738,7 @@
             try {
                 console.log(`Carregando questões da prova ID: ${examId}`);
                 
-                const response = await fetch(`https://sag-sag.rak8a3.easypanel.host/api/provas/${examId}/questoes`, {
+                const response = await fetch(`https://sag-sag.rak8a3.easypanel.host/api/provas/${examId}/questoes-detalhadas`, {
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json"
@@ -8750,10 +8750,7 @@
                     throw new Error(`Erro ao carregar questões. Status: ${response.status}. Detalhes: ${errorText}`);
                 }
                 
-                const questions = await response.json();
-                console.log(`Recebidas ${questions.length} questões da API:`, questions);
-                
-                return questions;
+                                const data = await response.json();                                // The API now returns an object with a "questoes" property                if (data.questoes && Array.isArray(data.questoes)) {                    console.log(`Recebidas ${data.questoes.length} questões da API:`, data.questoes);                    return data.questoes;                } else {                    console.log(`Resposta da API sem formato esperado:`, data);                    // If for some reason the API response format changes again, try to handle it gracefully                    return Array.isArray(data) ? data : [];                }
             } catch (error) {
                 console.error("Erro ao carregar questões da API:", error);
                 throw error;
