@@ -1099,6 +1099,9 @@
             const paginationContainer = document.getElementById('classesPaginationContainer');
             paginationContainer.innerHTML = '';
             
+            // Obter o filtro de escola atual
+            const escolaId = document.getElementById('filterSchool').value;
+            
             // Configurar botões de página anterior/próxima
             const prevPageBtn = document.getElementById('classesPrevPage');
             const nextPageBtn = document.getElementById('classesNextPage');
@@ -1132,25 +1135,25 @@
             // Adicionar event listeners para os botões de paginação
             prevPageBtn.onclick = function() {
                 if (paginationData.page > 1) {
-                    loadClassesFromAPI(paginationData.page - 1, paginationData.limit);
+                    loadClassesFromAPI(paginationData.page - 1, paginationData.limit, escolaId);
                 }
             };
             
             nextPageBtn.onclick = function() {
                 if (paginationData.page < paginationData.totalPages) {
-                    loadClassesFromAPI(paginationData.page + 1, paginationData.limit);
+                    loadClassesFromAPI(paginationData.page + 1, paginationData.limit, escolaId);
                 }
             };
             
             prevPageMobileBtn.onclick = function() {
                 if (paginationData.page > 1) {
-                    loadClassesFromAPI(paginationData.page - 1, paginationData.limit);
+                    loadClassesFromAPI(paginationData.page - 1, paginationData.limit, escolaId);
                 }
             };
             
             nextPageMobileBtn.onclick = function() {
                 if (paginationData.page < paginationData.totalPages) {
-                    loadClassesFromAPI(paginationData.page + 1, paginationData.limit);
+                    loadClassesFromAPI(paginationData.page + 1, paginationData.limit, escolaId);
                 }
             };
             
@@ -1173,7 +1176,7 @@
                 firstPageBtn.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50';
                 firstPageBtn.textContent = '1';
                 firstPageBtn.onclick = function() {
-                    loadClassesFromAPI(1, paginationData.limit);
+                    loadClassesFromAPI(1, paginationData.limit, escolaId);
                 };
                 paginationContainer.appendChild(firstPageBtn);
                 
@@ -1198,7 +1201,7 @@
                 
                 pageBtn.textContent = i.toString();
                 pageBtn.onclick = function() {
-                    loadClassesFromAPI(i, paginationData.limit);
+                    loadClassesFromAPI(i, paginationData.limit, escolaId);
                 };
                 
                 paginationContainer.appendChild(pageBtn);
@@ -1218,7 +1221,7 @@
                 lastPageBtn.className = 'relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50';
                 lastPageBtn.textContent = paginationData.totalPages.toString();
                 lastPageBtn.onclick = function() {
-                    loadClassesFromAPI(paginationData.totalPages, paginationData.limit);
+                    loadClassesFromAPI(paginationData.totalPages, paginationData.limit, escolaId);
                 };
                 paginationContainer.appendChild(lastPageBtn);
             }
