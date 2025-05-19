@@ -2856,7 +2856,7 @@
                             return {
                                 id: student.aluno_id,
                                 name: student.nome || student.aluno_nome || 'Sem nome',
-                                className: student.turma || 'N/A',
+                                className: student.turma_nome || student.turma || 'N/A',
                                 schoolName: student.escola_nome || 'N/A',
                                 performance: student.media !== null ? student.media : 'N/A',
                                 totalEvaluations: student.total_avaliacoes || 0,
@@ -2878,7 +2878,7 @@
                             return {
                                 id: student.aluno_id,
                                 name: student.nome || student.aluno_nome || 'Sem nome',
-                                className: student.turma || 'N/A',
+                                className: student.turma_nome || student.turma || 'N/A',
                                 schoolName: student.escola_nome || 'N/A',
                                 performance: student.media !== null ? student.media : 'N/A',
                                 totalEvaluations: student.total_avaliacoes || 0,
