@@ -1001,18 +1001,80 @@
                     throw new Error(`Erro ao carregar escolas: ${response.status}`);
                 }
 
-                const data = await response.json();
-                console.log('Escolas carregadas da API:', data);
+                const result = await response.json();
+                console.log('Escolas carregadas da API:', result);
                 
-                // Verificar se a resposta é um array
-                if (Array.isArray(data)) {
-                    // Limpar escolas existentes e adicionar as novas
-                    localStorage.setItem('schools', JSON.stringify([]));
+                // Limpar escolas existentes antes de adicionar novas
+                localStorage.setItem('schools', JSON.stringify([]));
+                
+                // Verificar se temos o novo formato de resposta com paginação
+                if (result && result.data && Array.isArray(result.data)) {
+                    // Formato paginado: { data: [...], page: 1, limit: 20, total: 106, totalPages: 6 }
+                    console.log(`Carregadas ${result.data.length} escolas (total de ${result.total} em ${result.totalPages} páginas)`);
                     
-                    // Inverter a ordem para que as últimas escolas cadastradas apareçam primeiro
-                    const reversedData = [...data].reverse();
+                    // Adicionar escolas da resposta atual
+                    result.data.forEach(escola => {
+                        addSchool(
+                            escola.nome || '',
+                            escola.regiao_id || '',
+                            escola.grupo_id || '',
+                            escola.id || null
+                        );
+                    });
                     
-                    reversedData.forEach(escola => {
+                    // Se temos mais de uma página, buscar as demais
+                    if (result.totalPages > 1) {
+                        // Mostrar feedback para o usuário
+                        showToast(`Carregando todas as ${result.total} escolas...`, 'info');
+                        
+                        // Buscar as demais páginas
+                        const otherPages = [];
+                        for (let page = 2; page <= result.totalPages; page++) {
+                            otherPages.push(
+                                fetch(`https://sag-sag.rak8a3.easypanel.host/api/escolas?page=${page}&limit=${result.limit}`)
+                                    .then(response => response.json())
+                                    .then(pageData => {
+                                        if (pageData && pageData.data && Array.isArray(pageData.data)) {
+                                            // Adicionar escolas desta página
+                                            pageData.data.forEach(escola => {
+                                                addSchool(
+                                                    escola.nome || '',
+                                                    escola.regiao_id || '',
+                                                    escola.grupo_id || '',
+                                                    escola.id || null
+                                                );
+                                            });
+                                            return pageData.data;
+                                        }
+                                        return [];
+                                    })
+                                    .catch(error => {
+                                        console.error(`Erro ao carregar página ${page}:`, error);
+                                        return [];
+                                    })
+                            );
+                        }
+                        
+                        // Aguardar todas as páginas adicionais
+                        Promise.all(otherPages)
+                            .then(results => {
+                                const totalLoaded = result.data.length + results.flat().length;
+                                console.log(`Carregamento concluído. Total de escolas: ${totalLoaded}`);
+                                showToast(`Carregadas ${totalLoaded} escolas com sucesso.`, 'success');
+                                
+                                // Atualizar a interface após carregar todas as páginas
+                                renderSchoolsList();
+                            });
+                    } else {
+                        // Se temos apenas uma página, atualizar interface diretamente
+                        renderSchoolsList();
+                    }
+                } else if (Array.isArray(result)) {
+                    // Formato antigo: array simples
+                    console.log(`Carregadas ${result.length} escolas`);
+                    
+                    // Adicionar escolas da resposta
+                    result.forEach(escola => {
                         addSchool(
                             escola.nome || '',
                             escola.regiao_id || '',
@@ -1024,7 +1086,7 @@
                     // Atualizar a interface
                     renderSchoolsList();
                 } else {
-                    console.error('Resposta da API não é um array:', data);
+                    console.error('Formato de resposta da API não reconhecido:', result);
                 }
             } catch (error) {
                 console.error('Erro ao carregar escolas da API:', error);
