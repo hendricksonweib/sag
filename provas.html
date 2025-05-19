@@ -8789,7 +8789,7 @@
                 questionItem.className = "py-4";
                 
                 // Limitar texto para exibição
-                const truncatedText = question.texto || question.enunciado || "Sem texto";
+                const truncatedText = question.enunciado || "Sem texto";
                 const displayText = truncatedText.length > 100 
                     ? truncatedText.substring(0, 100) + "..." 
                     : truncatedText;
@@ -8993,12 +8993,15 @@
                     
                     // Criar objeto da questão
                     const questionData = {
-                        texto: questionText,
-                        nivel_ensino: educationLevel,
-                        dificuldade: difficultyLevel,
-                        serie: gradeLevel,
+                        enunciado: questionText,
+                        imagem_url: document.getElementById("newQuestionImage").value || "",
+                        nivel_ensino: educationLevel || "ANOS_INICIAIS",
+                        dificuldade: difficultyLevel || "FACIL",
+                        serie: gradeLevel || "PRIMEIRO_ANO",
+                        pontos: 1, // Valor padrão
                         prova_id: parseInt(examId),
-                        componente_curricular_id: parseInt(curriculumComponent),
+                        componente_curricular_id: parseInt(curriculumComponent) || 0,
+                        codigos_bncc: [], // Array vazio ou integre com a seleção de códigos BNCC se existir
                         alternativas: alternativas
                     };
                     
@@ -9057,7 +9060,7 @@
                 const question = await loadQuestionDetails(questionId);
                 
                 // Preencher formulário com dados da questão
-                document.getElementById("editQuestionText").value = question.texto || question.enunciado || "";
+                document.getElementById("editQuestionText").value = question.enunciado || "";
                 
                 // Preencher imagem se existir
                 const imagePreview = document.getElementById("editImagePreview");
@@ -9243,8 +9246,13 @@
                 const difficultyLevel = document.getElementById("editDifficultyLevel").value;
                 const curriculumComponent = document.getElementById("editCurriculumComponent").value;
                 
-                // Obter alternativa correta
-                const correctAnswer = document.querySelector('input[name="editCorrectAnswer"]:checked').value;
+                // Verificar se há alternativa correta selecionada
+                const correctAnswerElement = document.querySelector('input[name="editCorrectAnswer"]:checked');
+                if (!correctAnswerElement) {
+                    alert("Por favor, selecione a alternativa correta.");
+                    return;
+                }
+                const correctAnswer = correctAnswerElement.value;
                 
                 // Montar alternativas
                 const alternativas = [];
@@ -9289,14 +9297,30 @@
                     });
                 }
                 
+                // Validar se temos pelo menos duas alternativas
+                if (alternativas.length < 2) {
+                    alert("Por favor, adicione pelo menos duas alternativas.");
+                    return;
+                }
+                
+                // Validar se há exatamente uma alternativa correta
+                const correctCount = alternativas.filter(alt => alt.correta).length;
+                if (correctCount !== 1) {
+                    alert("Deve haver exatamente uma alternativa correta.");
+                    return;
+                }
+                
                 // Criar objeto da questão
                 const questionData = {
-                    texto: questionText,
-                    nivel_ensino: educationLevel,
-                    dificuldade: difficultyLevel,
-                    serie: gradeLevel,
+                    enunciado: questionText,
+                    imagem_url: document.getElementById("editQuestionImage").value || "",
+                    nivel_ensino: educationLevel || "ANOS_INICIAIS",
+                    dificuldade: difficultyLevel || "FACIL",
+                    serie: gradeLevel || "PRIMEIRO_ANO",
+                    pontos: 1, // Valor padrão
                     prova_id: parseInt(examId),
-                    componente_curricular_id: parseInt(curriculumComponent),
+                    componente_curricular_id: curriculumComponent ? parseInt(curriculumComponent) : 0,
+                    codigos_bncc: [], // Array vazio ou integre com a seleção de códigos BNCC se existir
                     alternativas: alternativas
                 };
                 
@@ -9306,13 +9330,21 @@
                 const response = await fetch(`https://sag-sag.rak8a3.easypanel.host/api/questoes/${questionId}`, {
                     method: "PUT",
                     headers: {
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
                     },
                     body: JSON.stringify(questionData)
                 });
                 
                 if (!response.ok) {
-                    const errorText = await response.text().catch(() => "Erro desconhecido");
+                    let errorText;
+                    try {
+                        // Tentar obter detalhes do erro como JSON
+                        const errorJson = await response.json();
+                        errorText = JSON.stringify(errorJson);
+                    } catch {
+                        errorText = await response.text().catch(() => "Erro desconhecido");
+                    }
                     throw new Error(`Erro ao atualizar questão. Status: ${response.status}. Detalhes: ${errorText}`);
                 }
                 
@@ -9325,7 +9357,7 @@
                 // Recarregar questões
                 loadQuestionsForExam(examId)
                     .then(questions => {
-                        document.getElementById("questionCountDisplay").textContent = `${questions.length} questões encontradas`;
+                        document.getElementById("questionCountDisplay").textContent = `${questions?.length ?? 0} questões encontradas`;
                         renderQuestionsList(questions, examId);
                     });
                 
