@@ -734,7 +734,7 @@
             try {
                 console.log('Carregando turmas da API...');
                 
-                const response = await fetch('https://sag-sag.rak8a3.easypanel.host/api/turmas', {
+                const response = await fetch('https://sag-sag.rak8a3.easypanel.host/api/turmas?limit=1000', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
