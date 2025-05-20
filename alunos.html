@@ -86,6 +86,9 @@
                 
                 <!-- Students List -->
                 <div class="bg-white shadow overflow-hidden sm:rounded-md">
+                    <!-- Filter Banner -->
+                    <div id="filterBanner" class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4"><strong>Mostrando página 1 de 1</strong> - Total: 0 alunos</div>
+                    
                     <ul id="studentsList" class="divide-y divide-gray-200 overflow-hidden">
                         <li class="px-4 py-4 sm:px-6 text-center text-gray-500">
                             <i class="fas fa-spinner fa-spin mr-2"></i> Carregando alunos...
@@ -1093,6 +1096,142 @@
         function openEditStudentModal(studentId) {
             alert('Funcionalidade de edição a ser implementada.');
             // Implementação pendente
+        }
+
+        // Função para renderizar a lista de alunos (com filtros aplicados)
+        function renderStudentsList() {
+            const filterSchoolId = ensureNumber(document.getElementById('filterSchool').value);
+            const filterClassId = ensureNumber(document.getElementById('filterClass').value);
+            
+            console.log(`Renderizando lista de alunos com filtros - Escola ID: ${filterSchoolId || 'todas'}, Turma ID: ${filterClassId || 'todas'}`);
+            
+            // Obter alunos filtrados
+            const filteredStudents = getStudents(filterSchoolId, filterClassId);
+            console.log(`Filtro resultou em ${filteredStudents.length} alunos`);
+            
+            // Se estamos usando paginação da API, precisamos fazer uma nova chamada
+            if (document.getElementById('filterBanner')) {
+                // Atualizar o banner informativo com os filtros aplicados
+                let filterMessage = "";
+                
+                if (filterSchoolId && filterClassId) {
+                    // Obter nomes para a mensagem
+                    const escola = getSchools().find(s => s.id === filterSchoolId);
+                    const turma = getClasses().find(c => c.id === filterClassId);
+                    filterMessage = `<strong>Filtros aplicados:</strong> Escola "${escola?.name || 'Desconhecida'}" e Turma "${turma?.name || 'Desconhecida'}" - ${filteredStudents.length} alunos encontrados`;
+                } else if (filterSchoolId) {
+                    // Obter nome da escola para a mensagem
+                    const escola = getSchools().find(s => s.id === filterSchoolId);
+                    filterMessage = `<strong>Filtro aplicado:</strong> Escola "${escola?.name || 'Desconhecida'}" - ${filteredStudents.length} alunos encontrados`;
+                } else if (filterClassId) {
+                    // Obter nome da turma para a mensagem
+                    const turma = getClasses().find(c => c.id === filterClassId);
+                    filterMessage = `<strong>Filtro aplicado:</strong> Turma "${turma?.name || 'Desconhecida'}" - ${filteredStudents.length} alunos encontrados`;
+                } else {
+                    // Sem filtros aplicados
+                    filterMessage = `<strong>Mostrando página ${currentApiPage} de ${totalApiPages}</strong> - Total: ${totalApiStudents} alunos`;
+                }
+                
+                document.getElementById('filterBanner').innerHTML = filterMessage;
+            }
+            
+            // Se não houver resultados
+            if (filteredStudents.length === 0) {
+                document.getElementById('studentsList').innerHTML = `
+                    <li class="px-4 py-4 sm:px-6 text-center text-gray-500">
+                        <i class="fas fa-search text-xl mb-2"></i><br>
+                        Nenhum aluno encontrado para os filtros selecionados
+                    </li>`;
+                document.getElementById('studentsPaginationControls').classList.add('hidden');
+                return;
+            }
+            
+            // Inicializar paginação local para os resultados filtrados
+            const itemsPerPage = 10;
+            const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+            const currentPage = 1;
+            
+            // Obter itens da página atual
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, filteredStudents.length);
+            const studentsOnPage = filteredStudents.slice(startIndex, endIndex);
+            
+            // Limpar a lista atual
+            const studentsList = document.getElementById('studentsList');
+            studentsList.innerHTML = '';
+            
+            // Renderizar os alunos na página atual
+            studentsOnPage.forEach(student => {
+                // Buscar escola e turma
+                const school = getSchools().find(s => s.id === ensureNumber(student.schoolId));
+                const schoolName = school ? school.name : 'Escola não encontrada';
+                
+                const cls = getClasses().find(c => c.id === ensureNumber(student.classId));
+                const className = cls ? cls.name : 'Turma não encontrada';
+                
+                const li = document.createElement('li');
+                li.className = 'block hover:bg-gray-50';
+                li.innerHTML = `
+                    <div class="flex items-center px-4 py-4 sm:px-6">
+                        <div class="min-w-0 flex-1 flex items-center">
+                            <div class="flex-shrink-0">
+                                <span class="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
+                                    <i class="fas fa-user-graduate text-purple-600 text-lg"></i>
+                                </span>
+                            </div>
+                            <div class="min-w-0 flex-1 px-4">
+                                <div>
+                                <p class="text-sm font-medium text-blue-600 truncate">${student.name}</p>
+                                    <p class="mt-1 flex flex-wrap gap-2">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        <i class="fas fa-id-card mr-1"></i> ${student.registration}
+                                        </span>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <i class="fas fa-school mr-1"></i> ${schoolName}
+                                        </span>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                            <i class="fas fa-users mr-1"></i> ${className}
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="text-indigo-600 hover:text-indigo-900 editStudent" data-id="${student.id}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="ml-4 text-red-600 hover:text-red-900 deleteStudent" data-id="${student.id}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                studentsList.appendChild(li);
+            });
+            
+            // Atualizar os contadores de paginação
+            document.getElementById('studentsStartItem').textContent = startIndex + 1;
+            document.getElementById('studentsEndItem').textContent = endIndex;
+            document.getElementById('studentsTotalItems').textContent = filteredStudents.length;
+            
+            // Mostrar os controles de paginação
+            document.getElementById('studentsPaginationControls').classList.remove('hidden');
+            
+            // Adicionar event listeners para os botões de editar e excluir
+            document.querySelectorAll('.editStudent').forEach(button => {
+                button.addEventListener('click', function() {
+                    const studentId = parseInt(this.getAttribute('data-id'));
+                    openEditStudentModal(studentId);
+                });
+            });
+            
+            document.querySelectorAll('.deleteStudent').forEach(button => {
+                button.addEventListener('click', function() {
+                    const studentId = parseInt(this.getAttribute('data-id'));
+                    deleteStudent(studentId);
+                });
+            });
         }
     </script>
 </body>
