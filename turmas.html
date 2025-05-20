@@ -427,12 +427,12 @@
                     applySearchFilter();
                 } else {
                     // Caso contrário, filtrar apenas por escola
-                    if (escolaId) {
-                        // Se um filtro foi selecionado, adicionamos o parâmetro escola_id à chamada da API
-                        loadClassesFromAPI(1, 10, escolaId);
-                    } else {
-                        // Se "Todas as escolas" foi selecionado, chamar sem filtro
-                        loadClassesFromAPI(1, 10);
+                if (escolaId) {
+                    // Se um filtro foi selecionado, adicionamos o parâmetro escola_id à chamada da API
+                    loadClassesFromAPI(1, 10, escolaId);
+                } else {
+                    // Se "Todas as escolas" foi selecionado, chamar sem filtro
+                    loadClassesFromAPI(1, 10);
                     }
                 }
             });
@@ -986,15 +986,15 @@
                             
                             turmasData.forEach(turma => {
                                 console.log("Dados da turma recebida da API:", turma);
-                                addClass(
-                                    turma.nome,
-                                    turma.serie,
-                                    turma.escola_id,
-                                    turma.turno,
-                                    turma.id
-                                );
-                            });
-                            
+                            addClass(
+                                turma.nome,
+                                turma.serie,
+                                turma.escola_id,
+                                turma.turno,
+                                turma.id
+                            );
+                        });
+                        
                             console.log('Carregadas ' + turmasData.length + ' turmas da API (página ' + 
                                       responseData.page + ' de ' + responseData.totalPages + 
                                       ', total: ' + responseData.total + ' turmas)');
@@ -1032,10 +1032,10 @@
                             });
                             
                             // Renderizar a lista normalmente
-                            renderClassesList();
+                        renderClassesList();
                             
                             return Promise.resolve(true);
-                        } else {
+                    } else {
                             console.error('Formato da resposta da API não é o esperado:', responseData);
                             return Promise.resolve(false);
                         }
