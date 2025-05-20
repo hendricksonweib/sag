@@ -76,6 +76,16 @@
                                 <option value="">Todas as escolas</option>
                             </select>
                         </div>
+                        <div>
+                            <label for="searchClass" class="block text-sm font-medium text-gray-700">Buscar Turmas</label>
+                            <div class="mt-1 relative rounded-md shadow-sm">
+                                <input type="text" id="searchClass" placeholder="Digite o nome da turma" 
+                                    class="block w-full pr-10 pl-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -410,12 +420,42 @@
             // Filtro por escola
             document.getElementById('filterSchool').addEventListener('change', function() {
                 const escolaId = this.value;
-                if (escolaId) {
-                    // Se um filtro foi selecionado, adicionamos o parâmetro escola_id à chamada da API
-                    loadClassesFromAPI(1, 10, escolaId);
+                const searchTerm = document.getElementById('searchClass').value.toLowerCase().trim();
+                
+                if (searchTerm !== '') {
+                    // Se já temos uma busca, aplicar os dois filtros juntos
+                    applySearchFilter();
                 } else {
-                    // Se "Todas as escolas" foi selecionado, chamar sem filtro
-                    loadClassesFromAPI(1, 10);
+                    // Caso contrário, filtrar apenas por escola
+                    if (escolaId) {
+                        // Se um filtro foi selecionado, adicionamos o parâmetro escola_id à chamada da API
+                        loadClassesFromAPI(1, 10, escolaId);
+                    } else {
+                        // Se "Todas as escolas" foi selecionado, chamar sem filtro
+                        loadClassesFromAPI(1, 10);
+                    }
+                }
+            });
+            
+            // Adicionar evento para busca de turmas com atraso para evitar muitas chamadas
+            let searchTimeout;
+            document.getElementById('searchClass').addEventListener('keyup', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    applySearchFilter();
+                }, 300); // 300ms de atraso para evitar muitas chamadas durante a digitação
+            });
+            
+            // Para limpar a busca quando o campo ficar vazio
+            document.getElementById('searchClass').addEventListener('input', function() {
+                if (this.value === '') {
+                    clearTimeout(searchTimeout);
+                    const escolaId = document.getElementById('filterSchool').value;
+                    if (escolaId) {
+                        loadClassesFromAPI(1, 10, escolaId);
+                    } else {
+                        loadClassesFromAPI(1, 10);
+                    }
                 }
             });
             
@@ -872,6 +912,15 @@
         // Função para carregar turmas da API
         async function loadClassesFromAPI(page = 1, limit = 10, escolaId = null) {
             try {
+                // Verificar se temos uma busca ativa
+                const searchTerm = document.getElementById('searchClass').value.toLowerCase().trim();
+                if (searchTerm !== '') {
+                    // Se tivermos um termo de busca, usar a filtragem local em vez da API
+                    console.log(`Termo de busca ativo: "${searchTerm}". Usando filtragem local.`);
+                    applySearchFilter();
+                    return;
+                }
+                
                 console.log(`Carregando turmas da API (página ${page}, limite ${limit}${escolaId ? ', escola ' + escolaId : ''})...`);
                 
                 // Mostrar indicador de carregamento
@@ -1579,6 +1628,98 @@
             }
             
             return null;
+        }
+
+        // Função para aplicar o filtro de busca
+        function applySearchFilter() {
+            const searchTerm = document.getElementById('searchClass').value.toLowerCase().trim();
+            const escolaId = document.getElementById('filterSchool').value;
+            
+            if (searchTerm === '') {
+                // Se a busca estiver vazia, apenas carregamos as turmas normalmente
+                if (escolaId) {
+                    loadClassesFromAPI(1, 10, escolaId);
+                } else {
+                    loadClassesFromAPI(1, 10);
+                }
+                return;
+            }
+            
+            console.log(`Buscando turmas que contenham: "${searchTerm}"`);
+            
+            // Obter todas as turmas do localStorage
+            const allClasses = JSON.parse(localStorage.getItem('classes')) || [];
+            
+            // Filtrar turmas pelo termo de busca
+            let filteredClasses = allClasses.filter(cls => {
+                // Buscar pelo nome da turma
+                return cls.name.toLowerCase().includes(searchTerm);
+            });
+            
+            // Se também temos um filtro de escola, aplicá-lo
+            if (escolaId) {
+                const escolaIdNum = ensureNumber(escolaId);
+                filteredClasses = filteredClasses.filter(cls => 
+                    ensureNumber(cls.schoolId) === escolaIdNum
+                );
+            }
+            
+            console.log(`Encontradas ${filteredClasses.length} turmas com o termo "${searchTerm}"`);
+            
+            // Renderizar as turmas filtradas
+            renderFilteredClasses(filteredClasses, searchTerm, escolaId);
+        }
+
+        // Função para renderizar turmas filtradas pela busca
+        function renderFilteredClasses(classes, searchTerm, escolaId) {
+            const classesList = document.getElementById('classesList');
+            
+            // Criar banner informativo
+            const filterBanner = document.getElementById('filterBanner') || document.createElement('div');
+            filterBanner.id = 'filterBanner';
+            filterBanner.className = 'bg-blue-50 border-l-4 border-blue-500 p-4 mb-4';
+            
+            let filterMessage = "";
+            
+            // Construir mensagem com os filtros aplicados
+            if (searchTerm && escolaId) {
+                const escola = getSchools().find(s => s.id === ensureNumber(escolaId));
+                filterMessage = `<strong>Filtros aplicados:</strong> Busca por "${searchTerm}" e Escola "${escola?.name || 'Desconhecida'}" - <strong>${classes.length}</strong> turmas encontradas`;
+            } else if (searchTerm) {
+                filterMessage = `<strong>Filtro aplicado:</strong> Busca por "${searchTerm}" - <strong>${classes.length}</strong> turmas encontradas`;
+            } else if (escolaId) {
+                const escola = getSchools().find(s => s.id === ensureNumber(escolaId));
+                filterMessage = `<strong>Filtro aplicado:</strong> Escola "${escola?.name || 'Desconhecida'}" - <strong>${classes.length}</strong> turmas encontradas`;
+            }
+            
+            // Atualizar o banner informativo
+            filterBanner.innerHTML = filterMessage;
+            
+            // Adicionar o banner antes da lista de turmas se ainda não existir
+            const classesListContainer = classesList.parentElement;
+            if (!document.getElementById('filterBanner')) {
+                classesListContainer.insertBefore(filterBanner, classesList);
+            }
+            
+            // Se não houver turmas, mostrar mensagem e esconder paginação
+            if (classes.length === 0) {
+                classesList.innerHTML = '<li class="px-4 py-4 sm:px-6 text-center text-gray-500">' +
+                    '<i class="fas fa-search text-xl mb-2"></i><br>' +
+                    'Nenhuma turma encontrada para os filtros selecionados</li>';
+                document.getElementById('classesPaginationControls').classList.add('hidden');
+                return;
+            }
+            
+            // Mostrar os controles de paginação
+            document.getElementById('classesPaginationControls').classList.remove('hidden');
+            
+            // Limpar a lista atual e a paginação
+            classesList.innerHTML = '';
+            document.getElementById('classesPaginationContainer').innerHTML = '';
+            
+            // Inicializar a paginação com as turmas filtradas
+            classesPagination = null;
+            initClassesPagination(classes);
         }
     </script>
     
