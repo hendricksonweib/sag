@@ -493,6 +493,7 @@
         
         // Variáveis para armazenar todas as escolas e escolas filtradas
         let allSchools = [];
+        let filteredResults = null; // Adicionar variável para manter escolas filtradas
 
         // Função para obter escolas do localStorage
         function getSchools() {
@@ -504,6 +505,9 @@
             const schoolsList = document.getElementById('schoolsList');
             const schools = filteredSchools || getSchools();
             allSchools = getSchools(); // Manter cópia de todas as escolas
+            
+            // Atualizar a variável global de resultados filtrados
+            filteredResults = filteredSchools;
             
             const paginationControls = document.getElementById('paginationControls');
             
@@ -622,6 +626,7 @@
             if (!searchTerm.trim()) {
                 // Se a busca estiver vazia, mostrar todas as escolas
                 currentPage = 1; // Resetar para primeira página
+                filteredResults = null; // Limpar filtros
                 renderSchoolsList();
                 return;
             }
@@ -687,13 +692,8 @@
                 pageButton.addEventListener('click', () => {
                     currentPage = pageNum;
                     
-                    // Re-filtrar se houver termo de busca
-                    const searchTerm = document.getElementById('schoolSearch')?.value || '';
-                    if (searchTerm.trim()) {
-                        filterSchools(searchTerm);
-                    } else {
-                    renderSchoolsList();
-                    }
+                    // Usar os resultados filtrados se existirem
+                    renderSchoolsList(filteredResults);
                 });
                 pageNumbersContainer.appendChild(pageButton);
             }
@@ -717,52 +717,32 @@
             document.getElementById('prevPageBtn').addEventListener('click', () => {
                 if (currentPage > 1) {
                     currentPage--;
-                    // Re-filtrar se houver termo de busca
-                    const searchTerm = document.getElementById('schoolSearch')?.value || '';
-                    if (searchTerm.trim()) {
-                        filterSchools(searchTerm);
-                    } else {
-                    renderSchoolsList();
-                    }
+                    // Usar os resultados filtrados se existirem
+                    renderSchoolsList(filteredResults);
                 }
             });
 
             document.getElementById('nextPageBtn').addEventListener('click', () => {
                 if (currentPage < totalPages) {
                     currentPage++;
-                    // Re-filtrar se houver termo de busca
-                    const searchTerm = document.getElementById('schoolSearch')?.value || '';
-                    if (searchTerm.trim()) {
-                        filterSchools(searchTerm);
-                    } else {
-                    renderSchoolsList();
-                    }
+                    // Usar os resultados filtrados se existirem
+                    renderSchoolsList(filteredResults);
                 }
             });
 
             document.getElementById('prevPageBtnMobile').addEventListener('click', () => {
                 if (currentPage > 1) {
                     currentPage--;
-                    // Re-filtrar se houver termo de busca
-                    const searchTerm = document.getElementById('schoolSearch')?.value || '';
-                    if (searchTerm.trim()) {
-                        filterSchools(searchTerm);
-                    } else {
-                    renderSchoolsList();
-                    }
+                    // Usar os resultados filtrados se existirem
+                    renderSchoolsList(filteredResults);
                 }
             });
 
             document.getElementById('nextPageBtnMobile').addEventListener('click', () => {
                 if (currentPage < totalPages) {
                     currentPage++;
-                    // Re-filtrar se houver termo de busca
-                    const searchTerm = document.getElementById('schoolSearch')?.value || '';
-                    if (searchTerm.trim()) {
-                        filterSchools(searchTerm);
-                    } else {
-                    renderSchoolsList();
-                    }
+                    // Usar os resultados filtrados se existirem
+                    renderSchoolsList(filteredResults);
                 }
             });
             
