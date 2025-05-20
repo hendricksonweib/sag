@@ -639,13 +639,6 @@
             
             // Renderizar apenas as escolas filtradas
             renderSchoolsList(filteredSchools);
-            
-            // Se houver escolas encontradas, mostrar feedback
-            if (filteredSchools.length > 0) {
-                showToast(`Encontradas ${filteredSchools.length} escolas com "${searchTerm}"`, 'success');
-            } else {
-                showToast(`Nenhuma escola encontrada com "${searchTerm}"`, 'info');
-            }
         }
 
         // Função para renderizar números das páginas
