@@ -357,23 +357,26 @@
             // Configurar handlers de filtro e formulário
             setupEventHandlers();
             
-            // Carregar turmas primeiro - importante para evitar "Turma não encontrada"
-            loadClassesFromAPI().then(() => {
+            // Carregar escolas e turmas primeiro - importante para evitar problemas de exibição
+            Promise.all([
+                loadClassesFromAPI(),
+                // Carregar escolas se necessário
+            ]).then(() => {
                 // Validar e corrigir dados de alunos antes de inicializar
                 validateAndFixStudentData();
-                
+            
                 // Inicializar a lista de alunos no localStorage se não existir
                 if (!localStorage.getItem('students')) {
                     localStorage.setItem('students', JSON.stringify([]));
                 }
-                
+                    
                 // Preencher seletores de escolas e turmas
                 populateFilters();
-                
+            
                 // Carregar alunos da API
                 loadStudentsFromAPI();
             }).catch(error => {
-                console.error("Erro ao carregar turmas:", error);
+                console.error("Erro ao carregar turmas e escolas:", error);
                 // Mesmo com erro, tente prosseguir
                 validateAndFixStudentData();
                 
@@ -381,10 +384,10 @@
                 if (!localStorage.getItem('students')) {
                     localStorage.setItem('students', JSON.stringify([]));
                 }
-                
+            
                 // Preencher seletores de escolas e turmas
                 populateFilters();
-                
+            
                 // Carregar alunos da API
                 loadStudentsFromAPI();
             });
@@ -723,21 +726,21 @@
                         return;
                     }
                     
-                    // Atualizar variáveis de controle de paginação
+                        // Atualizar variáveis de controle de paginação
                     totalApiPages = paginationInfo.totalPages;
                     totalApiStudents = paginationInfo.total;
                     currentApiPage = paginationInfo.page;
                     
                     console.log(`Informações de paginação: página ${paginationInfo.page} de ${paginationInfo.totalPages}, total de ${paginationInfo.total} alunos`);
-                    
-                    // Limpar alunos existentes e adicionar os novos
+                        
+                        // Limpar alunos existentes e adicionar os novos
                     // Apenas limpar armazenamento local se não estivermos filtrando
                     if (!filterSchoolId && !filterClassId) {
                         localStorage.setItem('students', JSON.stringify([]));
                     }
-                    
-                    // Se a API retornou dados, usá-los
-                    if (alunosData.length > 0) {
+                        
+                        // Se a API retornou dados, usá-los
+                        if (alunosData.length > 0) {
                         console.log(`Processando ${alunosData.length} alunos da API`);
                         
                         // Imprimir exemplo do primeiro aluno para debug
@@ -798,15 +801,15 @@
                         
                         // Salvar todos os alunos de volta no localStorage
                         localStorage.setItem('students', JSON.stringify(students));
-                        
-                        console.log('Carregados ' + alunosData.length + ' alunos da API (página ' + 
+                            
+                            console.log('Carregados ' + alunosData.length + ' alunos da API (página ' + 
                                   paginationInfo.page + ' de ' + paginationInfo.totalPages + 
                                   ', total: ' + paginationInfo.total + ' alunos)');
-                        
-                        // Renderizar a lista com a paginação do backend
+                            
+                            // Renderizar a lista com a paginação do backend
                         renderStudentsListWithBackendPagination(alunosData, paginationInfo);
-                    } else {
-                        // Caso a API não tenha retornado alunos, criar alguns exemplos
+                        } else {
+                            // Caso a API não tenha retornado alunos, criar alguns exemplos
                         console.log('Nenhum aluno retornado da API para os filtros selecionados.');
                         
                         // Mostrar mensagem sem alunos para o filtro específico
@@ -832,7 +835,7 @@
                             } else if (filterClassId) {
                                 const turma = getClasses().find(c => c.id === filterClassId);
                                 filterMessage = `<strong>Filtro aplicado:</strong> Turma "${turma?.name || 'Desconhecida'}" - <strong>0</strong> alunos encontrados`;
-                            } else {
+                    } else {
                                 filterMessage = `<strong>Nenhum aluno encontrado</strong>`;
                             }
                             
@@ -944,11 +947,11 @@
                 
                 // Buscar escola e turma
                 const school = getSchools().find(s => ensureNumber(s.id) === escola_id);
-                const schoolName = school ? school.name : 'Escola não encontrada';
-                
+                    const schoolName = school ? school.name : 'Escola não encontrada';
+                    
                 // Usar a função robusta para buscar a turma
                 const cls = findClassById(turma_id);
-                const className = cls ? cls.name : 'Turma não encontrada';
+                    const className = cls ? cls.name : `Turma ID: ${turma_id}`;
                 
                 // Log adicional se a turma não for encontrada
                 if (!cls) {
@@ -956,45 +959,45 @@
                 } else {
                     console.log(`Turma encontrada: ${cls.name} (ID=${cls.id})`);
                 }
-                
-                const li = document.createElement('li');
-                li.className = 'block hover:bg-gray-50';
-                li.innerHTML = `
-                    <div class="flex items-center px-4 py-4 sm:px-6">
-                        <div class="min-w-0 flex-1 flex items-center">
-                            <div class="flex-shrink-0">
-                                <span class="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
-                                    <i class="fas fa-user-graduate text-purple-600 text-lg"></i>
-                                </span>
-                            </div>
-                            <div class="min-w-0 flex-1 px-4">
-                                <div>
+                    
+                    const li = document.createElement('li');
+                    li.className = 'block hover:bg-gray-50';
+                    li.innerHTML = `
+                        <div class="flex items-center px-4 py-4 sm:px-6">
+                            <div class="min-w-0 flex-1 flex items-center">
+                                <div class="flex-shrink-0">
+                                    <span class="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
+                                        <i class="fas fa-user-graduate text-purple-600 text-lg"></i>
+                                    </span>
+                                </div>
+                                <div class="min-w-0 flex-1 px-4">
+                                    <div>
                                 <p class="text-sm font-medium text-blue-600 truncate">${nome}</p>
-                                    <p class="mt-1 flex flex-wrap gap-2">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        <p class="mt-1 flex flex-wrap gap-2">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                             <i class="fas fa-id-card mr-1"></i> ${matricula || ''}
-                                        </span>
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            <i class="fas fa-school mr-1"></i> ${schoolName}
-                                        </span>
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                            <i class="fas fa-users mr-1"></i> ${className}
-                                        </span>
-                                    </p>
+                                            </span>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                <i class="fas fa-school mr-1"></i> ${schoolName}
+                                            </span>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                <i class="fas fa-users mr-1"></i> ${className}
+                                            </span>
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
+                            <div>
+                                <button class="text-indigo-600 hover:text-indigo-900 editStudent" data-id="${student.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="ml-4 text-red-600 hover:text-red-900 deleteStudent" data-id="${student.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div>
-                            <button class="text-indigo-600 hover:text-indigo-900 editStudent" data-id="${student.id}">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="ml-4 text-red-600 hover:text-red-900 deleteStudent" data-id="${student.id}">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-                
+                    `;
+                    
                 studentsList.appendChild(li);
             });
             
@@ -1551,8 +1554,8 @@
                     const school = getSchools().find(s => ensureNumber(s.id) === ensureNumber(student.schoolId));
                     const schoolName = school ? school.name : 'Escola não encontrada';
                     
-                    const cls = getClasses().find(c => ensureNumber(c.id) === ensureNumber(student.classId));
-                    const className = cls ? cls.name : 'Turma não encontrada';
+                    const cls = findClassById(ensureNumber(student.classId));
+                    const className = cls ? cls.name : `Turma ID: ${student.classId}`;
                     
                     const li = document.createElement('li');
                     li.className = 'block hover:bg-gray-50';
@@ -1782,8 +1785,7 @@
                 }
             }
             
-            // Fallback: Se a ID for um número pequeno (1-10), pegar a primeira turma com esse índice-1
-            // (muitas vezes, quando o backend retorna IDs como 1,2,3, esses correspondem à posição)
+            // Fallback: Se a ID for um número pequeno (1-10), pegar a turma com esse índice-1
             if (typeof numericId === 'number' && numericId > 0 && numericId <= 10 && allClasses.length >= numericId) {
                 // Tenta usar o ID como índice (com ajuste de base-0)
                 const indexCls = allClasses[numericId - 1];
@@ -1791,15 +1793,10 @@
                 return indexCls;
             }
             
-            // Medida drástica: retornar a primeira turma disponível se nenhuma correspondência for encontrada
-            if (allClasses.length > 0) {
-                const firstClass = allClasses[0];
-                console.warn(`findClassById: Nenhuma correspondência exata. Usando a primeira turma disponível: ${firstClass.name} (ID=${firstClass.id})`);
-                return firstClass;
-            }
+            // Removido o fallback que retornava a primeira turma quando não havia correspondência
             
-            // Se nenhuma das tentativas anteriores funcionou, temos um problema real
-            console.error(`findClassById: Nenhuma turma encontrada para ID=${classId}. Isso é um problema sério.`);
+            // Se nenhuma das tentativas anteriores funcionou, retornar null
+            console.error(`findClassById: Nenhuma turma encontrada para ID=${classId}.`);
             return null;
         }
 
