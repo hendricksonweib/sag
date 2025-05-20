@@ -441,8 +441,32 @@
             let searchTimeout;
             document.getElementById('searchClass').addEventListener('keyup', function() {
                 clearTimeout(searchTimeout);
+                const searchTerm = this.value.trim();
+                
+                // Mostrar indicador de "buscando..." para feedback instantâneo
+                if (searchTerm.length > 0) {
+                    document.getElementById('classesList').innerHTML = `
+                        <li class="px-4 py-4 sm:px-6 text-center text-gray-500">
+                            <i class="fas fa-spinner fa-spin mr-2"></i> Buscando "${searchTerm}"...
+                        </li>`;
+                }
+                
                 searchTimeout = setTimeout(() => {
-                    applySearchFilter();
+                    // Verificar se temos turmas no localStorage
+                    const classes = JSON.parse(localStorage.getItem('classes')) || [];
+                    
+                    if (classes.length === 0 && searchTerm.length > 0) {
+                        // Se não houver turmas no localStorage, carregar da API primeiro
+                        console.log("Não há turmas no localStorage. Carregando da API antes de buscar...");
+                        
+                        loadClassesFromAPI(1, 10).then(() => {
+                            setTimeout(() => {
+                                applySearchFilter();
+                            }, 300);
+                        });
+                    } else {
+                        applySearchFilter();
+                    }
                 }, 300); // 300ms de atraso para evitar muitas chamadas durante a digitação
             });
             
@@ -918,7 +942,7 @@
                     // Se tivermos um termo de busca, usar a filtragem local em vez da API
                     console.log(`Termo de busca ativo: "${searchTerm}". Usando filtragem local.`);
                     applySearchFilter();
-                    return;
+                    return Promise.resolve(false);
                 }
                 
                 console.log(`Carregando turmas da API (página ${page}, limite ${limit}${escolaId ? ', escola ' + escolaId : ''})...`);
@@ -958,23 +982,27 @@
                         
                         // Se a API retornou dados, usá-los
                         if (turmasData.length > 0) {
+                            console.log(`Recebidas ${turmasData.length} turmas da API`);
+                            
                             turmasData.forEach(turma => {
                                 console.log("Dados da turma recebida da API:", turma);
-                            addClass(
-                                turma.nome,
-                                turma.serie,
-                                turma.escola_id,
-                                turma.turno,
-                                turma.id
-                            );
-                        });
-                        
+                                addClass(
+                                    turma.nome,
+                                    turma.serie,
+                                    turma.escola_id,
+                                    turma.turno,
+                                    turma.id
+                                );
+                            });
+                            
                             console.log('Carregadas ' + turmasData.length + ' turmas da API (página ' + 
                                       responseData.page + ' de ' + responseData.totalPages + 
                                       ', total: ' + responseData.total + ' turmas)');
                             
                             // Renderizar a lista com a paginação do backend
                             renderClassesListWithBackendPagination(turmasData, responseData);
+                            
+                            return Promise.resolve(true);
                         } else {
                             console.log('Nenhuma turma retornada da API.');
                             // Mostrar mensagem de nenhuma turma encontrada
@@ -983,6 +1011,8 @@
                                     Nenhuma turma cadastrada
                                 </li>`;
                             document.getElementById('classesPaginationControls').classList.add('hidden');
+                            
+                            return Promise.resolve(false);
                         }
                     } else {
                         // Formato antigo (sem paginação)
@@ -1002,18 +1032,23 @@
                             });
                             
                             // Renderizar a lista normalmente
-                        renderClassesList();
-                    } else {
+                            renderClassesList();
+                            
+                            return Promise.resolve(true);
+                        } else {
                             console.error('Formato da resposta da API não é o esperado:', responseData);
+                            return Promise.resolve(false);
                         }
                     }
                 } else {
                     console.error('Erro ao carregar turmas da API:', response.status);
                     renderClassesList(); // Fallback para renderização local
+                    return Promise.resolve(false);
                 }
             } catch (error) {
                 console.error('Erro ao carregar turmas da API:', error);
                 renderClassesList(); // Fallback para renderização local
+                return Promise.resolve(false);
             }
         }
         
@@ -1649,22 +1684,75 @@
             
             // Obter todas as turmas do localStorage
             const allClasses = JSON.parse(localStorage.getItem('classes')) || [];
+            console.log(`Total de turmas no sistema: ${allClasses.length}`);
             
-            // Filtrar turmas pelo termo de busca
+            // Debug: mostrar as primeiras 5 turmas para verificar seus nomes
+            allClasses.slice(0, 5).forEach((cls, index) => {
+                console.log(`Turma ${index+1}: Nome="${cls.name}", ID=${cls.id}, EscolaID=${cls.schoolId}`);
+            });
+            
+            // Abordagem direta: verificar se o nome da turma inclui o termo de busca
+            // Tentamos diferentes formatos para maior robustez
             let filteredClasses = allClasses.filter(cls => {
-                // Buscar pelo nome da turma
-                return cls.name.toLowerCase().includes(searchTerm);
+                if (!cls || !cls.name) return false;
+                
+                // Verificar se o nome da turma contém o termo de busca
+                const nameMatch = cls.name.toLowerCase().includes(searchTerm);
+                
+                // Também verificar se o termo de busca pode estar em um nome alternativo (nome vs nome)
+                const altNameMatch = cls.nome && cls.nome.toLowerCase().includes(searchTerm);
+                
+                // Log de debug para entender o que está acontecendo
+                if (nameMatch || altNameMatch) {
+                    console.log(`Turma encontrada: "${cls.name}" corresponde a "${searchTerm}"`);
+                }
+                
+                return nameMatch || altNameMatch;
             });
             
             // Se também temos um filtro de escola, aplicá-lo
             if (escolaId) {
                 const escolaIdNum = ensureNumber(escolaId);
-                filteredClasses = filteredClasses.filter(cls => 
-                    ensureNumber(cls.schoolId) === escolaIdNum
-                );
+                filteredClasses = filteredClasses.filter(cls => {
+                    const classSchoolId = ensureNumber(cls.schoolId);
+                    return classSchoolId === escolaIdNum;
+                });
             }
             
             console.log(`Encontradas ${filteredClasses.length} turmas com o termo "${searchTerm}"`);
+            
+            // Se não encontrou nada, tente uma busca mais flexível com comparação parcial
+            if (filteredClasses.length === 0) {
+                console.log("Tentando busca mais flexível...");
+                
+                // Dividir o termo de busca em palavras para buscar por partes
+                const searchWords = searchTerm.split(/\s+/);
+                
+                filteredClasses = allClasses.filter(cls => {
+                    if (!cls || !cls.name) return false;
+                    
+                    const lowerName = cls.name.toLowerCase();
+                    
+                    // Verificar se qualquer palavra do termo de busca está contida no nome da turma
+                    return searchWords.some(word => {
+                        const matches = lowerName.includes(word);
+                        if (matches) {
+                            console.log(`Correspondência parcial: "${cls.name}" contém "${word}"`);
+                        }
+                        return matches;
+                    });
+                });
+                
+                // Se também temos um filtro de escola, aplicá-lo novamente
+                if (escolaId) {
+                    const escolaIdNum = ensureNumber(escolaId);
+                    filteredClasses = filteredClasses.filter(cls => 
+                        ensureNumber(cls.schoolId) === escolaIdNum
+                    );
+                }
+                
+                console.log(`Busca flexível encontrou ${filteredClasses.length} turmas`);
+            }
             
             // Renderizar as turmas filtradas
             renderFilteredClasses(filteredClasses, searchTerm, escolaId);
@@ -1673,6 +1761,9 @@
         // Função para renderizar turmas filtradas pela busca
         function renderFilteredClasses(classes, searchTerm, escolaId) {
             const classesList = document.getElementById('classesList');
+            
+            // Debug: para garantir que temos classes
+            console.log(`Renderizando ${classes.length} turmas filtradas`);
             
             // Criar banner informativo
             const filterBanner = document.getElementById('filterBanner') || document.createElement('div');
@@ -1703,9 +1794,27 @@
             
             // Se não houver turmas, mostrar mensagem e esconder paginação
             if (classes.length === 0) {
-                classesList.innerHTML = '<li class="px-4 py-4 sm:px-6 text-center text-gray-500">' +
-                    '<i class="fas fa-search text-xl mb-2"></i><br>' +
-                    'Nenhuma turma encontrada para os filtros selecionados</li>';
+                classesList.innerHTML = `
+                    <li class="px-4 py-4 sm:px-6 text-center text-gray-500">
+                        <i class="fas fa-search text-xl mb-2"></i><br>
+                        Nenhuma turma encontrada para "<strong>${searchTerm}</strong>"<br>
+                        <small class="block mt-2">Verifique se digitou o nome corretamente ou tente termos mais gerais</small>
+                        <button id="reloadClassesBtn" class="mt-3 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                            <i class="fas fa-sync-alt mr-1"></i> Recarregar turmas
+                        </button>
+                    </li>`;
+                
+                // Adicionar evento ao botão de recarregar
+                setTimeout(() => {
+                    const reloadBtn = document.getElementById('reloadClassesBtn');
+                    if (reloadBtn) {
+                        reloadBtn.addEventListener('click', function() {
+                            document.getElementById('searchClass').value = '';
+                            loadClassesFromAPI(1, 10);
+                        });
+                    }
+                }, 100);
+                
                 document.getElementById('classesPaginationControls').classList.add('hidden');
                 return;
             }
