@@ -193,8 +193,9 @@
     <script>
         // Helper function to ensure all IDs are treated as numbers
         function ensureNumber(value) {
-            if (value === null || value === undefined) return null;
-            return Number(value);
+            if (value === null || value === undefined || value === '') return null;
+            const num = Number(value);
+            return isNaN(num) ? null : num;
         }
         
         // Improved function for filtering students
@@ -207,52 +208,71 @@
             console.log(`Função getStudents chamada com: schoolId=${schoolId}, classId=${classId}`);
             console.log(`Total de alunos no sistema: ${students.length}`);
             
+            // Deep copy para debug
+            students.forEach((student, index) => {
+                console.log(`Aluno ${index+1}: ID=${student.id}, Nome=${student.name}, Escola ID=${student.schoolId}, Turma ID=${student.classId}`);
+            });
+            
+            let filteredStudents = [...students]; // Criar uma cópia para trabalhar
+            
             // If no filters are applied, return all students
             if (!schoolId && !classId) {
                 console.log('Nenhum filtro aplicado, retornando todos os alunos');
-                return students;
+                return filteredStudents;
             }
             
-            // Filter by school ID only
-            if (schoolId && !classId) {
-                const filtered = students.filter(student => ensureNumber(student.schoolId) === schoolId);
-                console.log(`Filtrando apenas por escola ID=${schoolId}, encontrados ${filtered.length} alunos`);
-                return filtered;
+            // Aplicar o filtro por escola se especificado
+            if (schoolId) {
+                console.log(`Aplicando filtro por escola ID=${schoolId}`);
+                filteredStudents = filteredStudents.filter(student => {
+                    const studentSchoolId = ensureNumber(student.schoolId);
+                    console.log(`Comparando escola do aluno ${student.name}: ${studentSchoolId} === ${schoolId} ? ${studentSchoolId === schoolId}`);
+                    return studentSchoolId === schoolId;
+                });
+                console.log(`Restaram ${filteredStudents.length} alunos após filtro de escola`);
             }
             
-            // Filter by class ID only (show all students from this class regardless of school)
-            if (!schoolId && classId) {
-                console.log(`Filtrando por turma ID=${classId}, verificando...`);
-                
-                const filtered = students.filter(student => ensureNumber(student.classId) === classId);
-                console.log(`Filtrando apenas por turma ID=${classId}, encontrados ${filtered.length} alunos`);
-                
-                if (filtered.length > 0) {
-                    console.log('Exemplo de aluno encontrado na filtragem por turma:');
-                    console.log(filtered[0]);
-                }
-                
-                return filtered;
+            // Aplicar o filtro por turma se especificado
+            if (classId) {
+                console.log(`Aplicando filtro por turma ID=${classId}`);
+                filteredStudents = filteredStudents.filter(student => {
+                    const studentClassId = ensureNumber(student.classId);
+                    console.log(`Comparando turma do aluno ${student.name}: ${studentClassId} === ${classId} ? ${studentClassId === classId}`);
+                    return studentClassId === classId;
+                });
+                console.log(`Restaram ${filteredStudents.length} alunos após filtro de turma`);
             }
             
-            // Filter by both school ID and class ID
-            const filtered = students.filter(student => 
-                ensureNumber(student.schoolId) === schoolId && 
-                ensureNumber(student.classId) === classId
-            );
-            console.log(`Filtrando por escola ID=${schoolId} E turma ID=${classId}, encontrados ${filtered.length} alunos`);
-            return filtered;
+            console.log(`Filtro final retornou ${filteredStudents.length} alunos`);
+            if (filteredStudents.length > 0) {
+                console.log('Exemplo do primeiro aluno filtrado:', filteredStudents[0]);
+            }
+            
+            return filteredStudents;
         }
         
         // Updated function to get classes for a specific school
         function getClasses(schoolId = null) {
+            // Garantir que o ID da escola seja um número
+            schoolId = ensureNumber(schoolId);
+            
             const allClasses = JSON.parse(localStorage.getItem('classes')) || [];
+            console.log(`getClasses chamado com schoolId=${schoolId || 'nenhuma'}, total de turmas: ${allClasses.length}`);
             
             if (!schoolId) {
+                console.log('Retornando todas as turmas');
                 return allClasses;
             }
             
-            return allClasses.filter(cls => cls.schoolId === schoolId);
+            // Filtrar turmas pela escola, garantindo consistência nos tipos de dados
+            const filteredClasses = allClasses.filter(cls => {
+                const classSchoolId = ensureNumber(cls.schoolId);
+                return classSchoolId === schoolId;
+            });
+            
+            console.log(`Encontradas ${filteredClasses.length} turmas para a escola ID=${schoolId}`);
+            
+            return filteredClasses;
         }
         
         // Função para criar um aluno via API
@@ -334,6 +354,9 @@
                 document.getElementById('userName').textContent = currentUser.name;
             }
             
+            // Validar e corrigir dados de alunos antes de inicializar
+            validateAndFixStudentData();
+            
             // Inicializar a lista de alunos no localStorage se não existir
             if (!localStorage.getItem('students')) {
                 localStorage.setItem('students', JSON.stringify([]));
@@ -370,7 +393,10 @@
             
             // Filtro por escola e turma
             document.getElementById('filterSchool').addEventListener('change', function() {
+                console.log("Filtro de escola alterado");
+                // Usar ensureNumber para garantir que o ID seja um número ou null
                 const schoolId = ensureNumber(this.value);
+                console.log(`Escola selecionada: ID=${schoolId || 'nenhuma'}, Valor=${this.value}`);
                 
                 // Resetar o filtro de turma quando a escola mudar
                 const filterClassSelect = document.getElementById('filterClass');
@@ -378,8 +404,16 @@
                 
                 // Se uma escola foi selecionada, popular o seletor de turmas com as turmas dessa escola
                 if (schoolId) {
+                    console.log(`Escola selecionada: ID=${schoolId}. Carregando turmas relacionadas...`);
+                    
                     // Obter apenas as turmas da escola selecionada
                     const schoolClasses = getClasses(schoolId);
+                    console.log(`Encontradas ${schoolClasses.length} turmas para a escola ID=${schoolId}`);
+                    
+                    // Exibir detalhes de cada turma encontrada
+                    schoolClasses.forEach((cls, index) => {
+                        console.log(`Turma ${index+1}: ID=${cls.id}, Nome=${cls.name}, Escola ID=${cls.schoolId}`);
+                    });
                     
                     // Popular o seletor de turmas
                     schoolClasses.forEach(cls => {
@@ -390,6 +424,7 @@
                     });
                 } else {
                     // Se nenhuma escola foi selecionada, mostrar todas as turmas
+                    console.log('Nenhuma escola selecionada, mostrando todas as turmas');
                     const allClasses = getClasses();
                     const schools = getSchools();
                     
@@ -398,7 +433,7 @@
                         option.value = cls.id;
                         
                         // Adicionar informação da escola no nome da turma para clareza
-                        const school = schools.find(s => s.id === ensureNumber(cls.schoolId));
+                        const school = schools.find(s => ensureNumber(s.id) === ensureNumber(cls.schoolId));
                         const schoolName = school ? school.name : 'Escola desconhecida';
                         
                         // Formatar como "Turma (Escola)" para facilitar identificação
@@ -413,10 +448,9 @@
             });
             
             document.getElementById('filterClass').addEventListener('change', function() {
+                console.log("Filtro de turma alterado");
                 const classId = ensureNumber(this.value);
-                const schoolId = ensureNumber(document.getElementById('filterSchool').value);
-                
-                console.log(`Filtro de turma alterado: Turma ID=${classId || 'nenhuma'}, Escola ID=${schoolId || 'nenhuma'}`);
+                console.log(`Turma selecionada: ID=${classId || 'nenhuma'}, Valor=${this.value}`);
                 
                 // Atualizar a lista de alunos com os filtros aplicados
                 renderStudentsList();
@@ -518,17 +552,24 @@
                 '<option value="">Todas as turmas</option>' : 
                 '<option value="">Selecione uma turma</option>';
             
-            // Se não houver escola selecionada e for o filtro, mostrar todas as turmas
+            // Garantir que o ID da escola seja um número
+            schoolId = ensureNumber(schoolId);
+            
+            console.log(`Populando seletor de turmas${isFilterSelector ? ' (filtro)' : ''} com escola ID=${schoolId || 'nenhuma'}`);
+            
+            // Se não houver escola selecionada e for o filtro, mostrar todas as turmas com o nome da escola
             if (!schoolId && isFilterSelector) {
                 const allClasses = getClasses();
                 const schools = getSchools();
+                
+                console.log(`Carregando todas as ${allClasses.length} turmas para o filtro`);
                 
                 allClasses.forEach(cls => {
                     const option = document.createElement('option');
                     option.value = cls.id;
                     
                     // Adicionar informação da escola no nome da turma para clareza
-                    const school = schools.find(s => s.id === cls.schoolId);
+                    const school = schools.find(s => s.id === ensureNumber(cls.schoolId));
                     const schoolName = school ? school.name : 'Escola desconhecida';
                     
                     // Formatar como "Turma (Escola)" para facilitar identificação
@@ -540,11 +581,26 @@
             }
             
             // Se não houver escola selecionada e for o formulário, não fazer nada
-            if (!schoolId) return;
+            if (!schoolId) {
+                console.log('Nenhuma escola selecionada para o formulário, deixando seletor de turmas vazio');
+                return;
+            }
             
             // Obter turmas da escola selecionada
             const classes = getClasses(schoolId);
             console.log(`Carregando ${classes.length} turmas para a escola ID ${schoolId}`);
+            
+            if (classes.length === 0) {
+                console.log('Nenhuma turma encontrada para esta escola');
+                
+                // Adicionar mensagem indicando que não há turmas
+                const option = document.createElement('option');
+                option.value = "";
+                option.textContent = "-- Nenhuma turma disponível --";
+                option.disabled = true;
+                selector.appendChild(option);
+                return;
+            }
             
             classes.forEach(cls => {
                 const option = document.createElement('option');
@@ -552,6 +608,8 @@
                 option.textContent = cls.name;
                 selector.appendChild(option);
             });
+            
+            console.log(`Seletor de turmas populado com ${classes.length} turmas da escola ${schoolId}`);
         }
         
         // Variable to store the pagination controller
@@ -1100,138 +1158,264 @@
 
         // Função para renderizar a lista de alunos (com filtros aplicados)
         function renderStudentsList() {
-            const filterSchoolId = ensureNumber(document.getElementById('filterSchool').value);
-            const filterClassId = ensureNumber(document.getElementById('filterClass').value);
-            
-            console.log(`Renderizando lista de alunos com filtros - Escola ID: ${filterSchoolId || 'todas'}, Turma ID: ${filterClassId || 'todas'}`);
-            
-            // Obter alunos filtrados
-            const filteredStudents = getStudents(filterSchoolId, filterClassId);
-            console.log(`Filtro resultou em ${filteredStudents.length} alunos`);
-            
-            // Se estamos usando paginação da API, precisamos fazer uma nova chamada
-            if (document.getElementById('filterBanner')) {
+            try {
+                const filterSchoolId = ensureNumber(document.getElementById('filterSchool').value);
+                const filterClassId = ensureNumber(document.getElementById('filterClass').value);
+                
+                console.log(`-------- INICIANDO RENDERIZAÇÃO DE ALUNOS --------`);
+                console.log(`Filtros selecionados: Escola ID=${filterSchoolId || 'todas'}, Turma ID=${filterClassId || 'todas'}`);
+                
+                // Mostrar detalhes do que foi selecionado
+                if (filterSchoolId) {
+                    const school = getSchools().find(s => s.id === filterSchoolId);
+                    console.log(`Escola selecionada: ${school ? school.name : 'Não encontrada'} (ID=${filterSchoolId})`);
+                }
+                if (filterClassId) {
+                    const cls = getClasses().find(c => c.id === filterClassId);
+                    console.log(`Turma selecionada: ${cls ? cls.name : 'Não encontrada'} (ID=${filterClassId})`);
+                }
+                
+                // Obter alunos filtrados
+                const filteredStudents = getStudents(filterSchoolId, filterClassId);
+                console.log(`Filtro resultou em ${filteredStudents.length} alunos`);
+                
                 // Atualizar o banner informativo com os filtros aplicados
+                const filterBanner = document.getElementById('filterBanner');
                 let filterMessage = "";
                 
                 if (filterSchoolId && filterClassId) {
                     // Obter nomes para a mensagem
                     const escola = getSchools().find(s => s.id === filterSchoolId);
                     const turma = getClasses().find(c => c.id === filterClassId);
-                    filterMessage = `<strong>Filtros aplicados:</strong> Escola "${escola?.name || 'Desconhecida'}" e Turma "${turma?.name || 'Desconhecida'}" - ${filteredStudents.length} alunos encontrados`;
+                    filterMessage = `<strong>Filtros aplicados:</strong> Escola "${escola?.name || 'Desconhecida'}" e Turma "${turma?.name || 'Desconhecida'}" - <strong>${filteredStudents.length}</strong> alunos encontrados`;
                 } else if (filterSchoolId) {
                     // Obter nome da escola para a mensagem
                     const escola = getSchools().find(s => s.id === filterSchoolId);
-                    filterMessage = `<strong>Filtro aplicado:</strong> Escola "${escola?.name || 'Desconhecida'}" - ${filteredStudents.length} alunos encontrados`;
+                    filterMessage = `<strong>Filtro aplicado:</strong> Escola "${escola?.name || 'Desconhecida'}" - <strong>${filteredStudents.length}</strong> alunos encontrados`;
                 } else if (filterClassId) {
                     // Obter nome da turma para a mensagem
                     const turma = getClasses().find(c => c.id === filterClassId);
-                    filterMessage = `<strong>Filtro aplicado:</strong> Turma "${turma?.name || 'Desconhecida'}" - ${filteredStudents.length} alunos encontrados`;
+                    const turmaName = turma?.name || 'Desconhecida';
+                    
+                    // Adicionar informação da escola da turma se disponível
+                    let escolaInfo = '';
+                    if (turma && turma.schoolId) {
+                        const escola = getSchools().find(s => s.id === ensureNumber(turma.schoolId));
+                        if (escola) {
+                            escolaInfo = ` da escola "${escola.name}"`;
+                        }
+                    }
+                    
+                    filterMessage = `<strong>Filtro aplicado:</strong> Turma "${turmaName}"${escolaInfo} - <strong>${filteredStudents.length}</strong> alunos encontrados`;
                 } else {
                     // Sem filtros aplicados
-                    filterMessage = `<strong>Mostrando página ${currentApiPage} de ${totalApiPages}</strong> - Total: ${totalApiStudents} alunos`;
+                    filterMessage = `<strong>Mostrando todos os alunos</strong> - Total: <strong>${filteredStudents.length}</strong> alunos`;
+                    
+                    // Se estamos usando paginação da API, mostrar informações de paginação
+                    if (typeof currentApiPage !== 'undefined' && typeof totalApiPages !== 'undefined') {
+                        filterMessage = `<strong>Mostrando página ${currentApiPage} de ${totalApiPages}</strong> - Total: <strong>${filteredStudents.length}</strong> alunos`;
+                    }
                 }
                 
-                document.getElementById('filterBanner').innerHTML = filterMessage;
-            }
-            
-            // Se não houver resultados
-            if (filteredStudents.length === 0) {
-                document.getElementById('studentsList').innerHTML = `
-                    <li class="px-4 py-4 sm:px-6 text-center text-gray-500">
-                        <i class="fas fa-search text-xl mb-2"></i><br>
-                        Nenhum aluno encontrado para os filtros selecionados
-                    </li>`;
-                document.getElementById('studentsPaginationControls').classList.add('hidden');
-                return;
-            }
-            
-            // Inicializar paginação local para os resultados filtrados
-            const itemsPerPage = 10;
-            const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
-            const currentPage = 1;
-            
-            // Obter itens da página atual
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, filteredStudents.length);
-            const studentsOnPage = filteredStudents.slice(startIndex, endIndex);
-            
-            // Limpar a lista atual
-            const studentsList = document.getElementById('studentsList');
-            studentsList.innerHTML = '';
-            
-            // Renderizar os alunos na página atual
-            studentsOnPage.forEach(student => {
-                // Buscar escola e turma
-                const school = getSchools().find(s => s.id === ensureNumber(student.schoolId));
-                const schoolName = school ? school.name : 'Escola não encontrada';
+                // Atualizar o banner
+                filterBanner.innerHTML = filterMessage;
+                filterBanner.classList.remove('hidden');
                 
-                const cls = getClasses().find(c => c.id === ensureNumber(student.classId));
-                const className = cls ? cls.name : 'Turma não encontrada';
+                // Se não houver resultados
+                if (filteredStudents.length === 0) {
+                    document.getElementById('studentsList').innerHTML = `
+                        <li class="px-4 py-4 sm:px-6 text-center text-gray-500">
+                            <i class="fas fa-search text-xl mb-2"></i><br>
+                            Nenhum aluno encontrado para os filtros selecionados
+                        </li>`;
+                    document.getElementById('studentsPaginationControls').classList.add('hidden');
+                    return;
+                }
                 
-                const li = document.createElement('li');
-                li.className = 'block hover:bg-gray-50';
-                li.innerHTML = `
-                    <div class="flex items-center px-4 py-4 sm:px-6">
-                        <div class="min-w-0 flex-1 flex items-center">
-                            <div class="flex-shrink-0">
-                                <span class="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
-                                    <i class="fas fa-user-graduate text-purple-600 text-lg"></i>
-                                </span>
-                            </div>
-                            <div class="min-w-0 flex-1 px-4">
-                                <div>
-                                <p class="text-sm font-medium text-blue-600 truncate">${student.name}</p>
-                                    <p class="mt-1 flex flex-wrap gap-2">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                        <i class="fas fa-id-card mr-1"></i> ${student.registration}
-                                        </span>
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            <i class="fas fa-school mr-1"></i> ${schoolName}
-                                        </span>
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                            <i class="fas fa-users mr-1"></i> ${className}
-                                        </span>
-                                    </p>
+                // Inicializar paginação local para os resultados filtrados
+                const itemsPerPage = 10;
+                const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+                const currentPage = 1;
+                
+                // Obter itens da página atual
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = Math.min(startIndex + itemsPerPage, filteredStudents.length);
+                const studentsOnPage = filteredStudents.slice(startIndex, endIndex);
+                
+                // Limpar a lista atual
+                const studentsList = document.getElementById('studentsList');
+                studentsList.innerHTML = '';
+                
+                // Renderizar os alunos na página atual
+                studentsOnPage.forEach((student, index) => {
+                    // Debug de cada aluno renderizado
+                    console.log(`Renderizando aluno ${index+1}: ID=${student.id}, Nome=${student.name}, Escola=${student.schoolId}, Turma=${student.classId}`);
+                    
+                    // Buscar escola e turma
+                    const school = getSchools().find(s => ensureNumber(s.id) === ensureNumber(student.schoolId));
+                    const schoolName = school ? school.name : 'Escola não encontrada';
+                    
+                    const cls = getClasses().find(c => ensureNumber(c.id) === ensureNumber(student.classId));
+                    const className = cls ? cls.name : 'Turma não encontrada';
+                    
+                    const li = document.createElement('li');
+                    li.className = 'block hover:bg-gray-50';
+                    li.innerHTML = `
+                        <div class="flex items-center px-4 py-4 sm:px-6">
+                            <div class="min-w-0 flex-1 flex items-center">
+                                <div class="flex-shrink-0">
+                                    <span class="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
+                                        <i class="fas fa-user-graduate text-purple-600 text-lg"></i>
+                                    </span>
+                                </div>
+                                <div class="min-w-0 flex-1 px-4">
+                                    <div>
+                                    <p class="text-sm font-medium text-blue-600 truncate">${student.name}</p>
+                                        <p class="mt-1 flex flex-wrap gap-2">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            <i class="fas fa-id-card mr-1"></i> ${student.registration}
+                                            </span>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                <i class="fas fa-school mr-1"></i> ${schoolName}
+                                            </span>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                <i class="fas fa-users mr-1"></i> ${className}
+                                            </span>
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
+                            <div>
+                                <button class="text-indigo-600 hover:text-indigo-900 editStudent" data-id="${student.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="ml-4 text-red-600 hover:text-red-900 deleteStudent" data-id="${student.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div>
-                            <button class="text-indigo-600 hover:text-indigo-900 editStudent" data-id="${student.id}">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="ml-4 text-red-600 hover:text-red-900 deleteStudent" data-id="${student.id}">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
+                    `;
+                    
+                    studentsList.appendChild(li);
+                });
                 
-                studentsList.appendChild(li);
-            });
-            
-            // Atualizar os contadores de paginação
-            document.getElementById('studentsStartItem').textContent = startIndex + 1;
-            document.getElementById('studentsEndItem').textContent = endIndex;
-            document.getElementById('studentsTotalItems').textContent = filteredStudents.length;
-            
-            // Mostrar os controles de paginação
-            document.getElementById('studentsPaginationControls').classList.remove('hidden');
-            
-            // Adicionar event listeners para os botões de editar e excluir
-            document.querySelectorAll('.editStudent').forEach(button => {
-                button.addEventListener('click', function() {
-                    const studentId = parseInt(this.getAttribute('data-id'));
-                    openEditStudentModal(studentId);
+                // Atualizar os contadores de paginação
+                document.getElementById('studentsStartItem').textContent = startIndex + 1;
+                document.getElementById('studentsEndItem').textContent = endIndex;
+                document.getElementById('studentsTotalItems').textContent = filteredStudents.length;
+                
+                // Mostrar os controles de paginação
+                document.getElementById('studentsPaginationControls').classList.remove('hidden');
+                
+                // Adicionar event listeners para os botões de editar e excluir
+                document.querySelectorAll('.editStudent').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const studentId = parseInt(this.getAttribute('data-id'));
+                        openEditStudentModal(studentId);
+                    });
                 });
+                
+                document.querySelectorAll('.deleteStudent').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const studentId = parseInt(this.getAttribute('data-id'));
+                        deleteStudent(studentId);
+                    });
+                });
+                
+                console.log(`-------- RENDERIZAÇÃO DE ALUNOS CONCLUÍDA --------`);
+            } catch (error) {
+                console.error('Erro ao renderizar lista de alunos:', error);
+                alert('Ocorreu um erro ao exibir a lista de alunos. Consulte o console para mais detalhes.');
+            }
+        }
+
+        // Função para validar e corrigir problemas de consistência nos dados de alunos
+        function validateAndFixStudentData() {
+            console.log("Validando e corrigindo dados de alunos...");
+            
+            let students = JSON.parse(localStorage.getItem('students')) || [];
+            const schools = JSON.parse(localStorage.getItem('schools')) || [];
+            const classes = JSON.parse(localStorage.getItem('classes')) || [];
+            let hasChanges = false;
+            
+            // Imprimir informações de debug
+            console.log(`Total de escolas: ${schools.length}`);
+            console.log(`Total de turmas: ${classes.length}`);
+            console.log(`Total de alunos: ${students.length}`);
+            
+            // Imprimir detalhes de cada escola
+            schools.forEach((school, index) => {
+                console.log(`Escola ${index+1}: ID=${school.id}, Nome=${school.name}`);
             });
             
-            document.querySelectorAll('.deleteStudent').forEach(button => {
-                button.addEventListener('click', function() {
-                    const studentId = parseInt(this.getAttribute('data-id'));
-                    deleteStudent(studentId);
-                });
+            // Imprimir detalhes de cada turma
+            classes.forEach((cls, index) => {
+                console.log(`Turma ${index+1}: ID=${cls.id}, Nome=${cls.name}, Escola ID=${cls.schoolId}`);
+                
+                // Verificar se a escola desta turma existe
+                const school = schools.find(s => ensureNumber(s.id) === ensureNumber(cls.schoolId));
+                if (!school) {
+                    console.warn(`Aviso: Turma "${cls.name}" (ID=${cls.id}) está associada a uma escola inexistente (ID=${cls.schoolId})`);
+                }
             });
+            
+            // Validar e corrigir cada aluno
+            students.forEach((student, index) => {
+                console.log(`Aluno ${index+1}: ID=${student.id}, Nome=${student.name}, Escola ID=${student.schoolId}, Turma ID=${student.classId}`);
+                
+                // Garantir que todos os IDs sejam números
+                if (typeof student.id !== 'number') {
+                    console.log(`Corrigindo: ID do aluno "${student.name}" não é um número`);
+                    student.id = ensureNumber(student.id);
+                    hasChanges = true;
+                }
+                
+                if (typeof student.schoolId !== 'number' && student.schoolId !== null) {
+                    console.log(`Corrigindo: ID da escola do aluno "${student.name}" não é um número`);
+                    student.schoolId = ensureNumber(student.schoolId);
+                    hasChanges = true;
+                }
+                
+                if (typeof student.classId !== 'number' && student.classId !== null) {
+                    console.log(`Corrigindo: ID da turma do aluno "${student.name}" não é um número`);
+                    student.classId = ensureNumber(student.classId);
+                    hasChanges = true;
+                }
+                
+                // Verificar se a escola do aluno existe
+                if (student.schoolId) {
+                    const school = schools.find(s => ensureNumber(s.id) === ensureNumber(student.schoolId));
+                    if (!school) {
+                        console.warn(`Aviso: Aluno "${student.name}" está associado a uma escola inexistente (ID=${student.schoolId})`);
+                    }
+                }
+                
+                // Verificar se a turma do aluno existe
+                if (student.classId) {
+                    const cls = classes.find(c => ensureNumber(c.id) === ensureNumber(student.classId));
+                    if (!cls) {
+                        console.warn(`Aviso: Aluno "${student.name}" está associado a uma turma inexistente (ID=${student.classId})`);
+                    } else {
+                        // Verificar se a turma do aluno pertence à escola do aluno
+                        if (student.schoolId && ensureNumber(cls.schoolId) !== ensureNumber(student.schoolId)) {
+                            console.warn(`Aviso: Aluno "${student.name}" está em uma turma (ID=${student.classId}) que não pertence à sua escola (ID=${student.schoolId})`);
+                            
+                            // Opcionalmente poderia corrigir este problema atualizando a escola do aluno
+                            // para corresponder à escola da turma
+                            //student.schoolId = cls.schoolId;
+                            //hasChanges = true;
+                        }
+                    }
+                }
+            });
+            
+            // Salvar alterações se houver
+            if (hasChanges) {
+                console.log("Corrigidos problemas nos dados de alunos. Salvando alterações...");
+                localStorage.setItem('students', JSON.stringify(students));
+            } else {
+                console.log("Nenhum problema encontrado nos dados de alunos.");
+            }
         }
     </script>
 </body>
