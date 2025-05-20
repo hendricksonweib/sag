@@ -94,6 +94,9 @@
                 
                 <!-- Schools List -->
                 <div class="bg-white shadow-md overflow-hidden sm:rounded-lg border border-gray-200">
+                    <!-- Filter Banner -->
+                    <div id="filterBanner" class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4"><strong>Mostrando página 1 de 33</strong> - Total: 329 escolas</div>
+                    
                     <ul id="schoolsList" class="divide-y divide-gray-200">
                         <li class="px-4 py-4 sm:px-6 text-center text-gray-500">
                             Nenhuma escola cadastrada
@@ -510,6 +513,11 @@
                         ${filteredSchools ? 'Nenhuma escola encontrada com esse nome' : 'Nenhuma escola cadastrada'}
                     </li>`;
                 paginationControls.classList.add('hidden');
+                
+                // Atualizar o banner de filtro mesmo quando vazio
+                if (document.getElementById('filterBanner')) {
+                    document.getElementById('filterBanner').innerHTML = '<strong>Nenhuma escola encontrada</strong>';
+                }
                 return;
             }
             
@@ -524,6 +532,11 @@
             document.getElementById('endItem').textContent = endIndex;
             document.getElementById('totalItems').textContent = schools.length;
             document.getElementById('currentPageMobile').textContent = currentPage;
+            
+            // Atualizar o banner de filtro com dados reais
+            if (document.getElementById('filterBanner')) {
+                document.getElementById('filterBanner').innerHTML = `<strong>Mostrando página ${currentPage} de ${totalPages}</strong> - Total: ${schools.length} escolas`;
+            }
             
             // Renderizar números das páginas
             renderPageNumbers();
