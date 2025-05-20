@@ -296,7 +296,7 @@
                 console.log('Enviando dados de aluno para API:', studentData);
                 
                 // Enviar para a API
-                const response = await fetch('https://sag-sag.rak8a3.easypanel.host/api/alunos', {
+                const response = await fetch('https://sag-sag.rak8a3.easypanel.host/api/alunos?limit=1000', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
