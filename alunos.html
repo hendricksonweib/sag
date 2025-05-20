@@ -1318,10 +1318,140 @@
         
         // Função para abrir o modal de edição de aluno
         function openEditStudentModal(studentId) {
-            alert('Funcionalidade de edição a ser implementada.');
-            // Implementação pendente
-        }
+  // Criar elementos do modal
+  const modalOverlay = document.createElement('div');
+  modalOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+  
+  const modalContent = document.createElement('div');
+  modalContent.className = 'bg-white rounded-lg p-6 w-full max-w-md';
+  
+  const modalHeader = document.createElement('div');
+  modalHeader.className = 'flex justify-between items-center mb-4';
+  
+  const modalTitle = document.createElement('h3');
+  modalTitle.className = 'text-lg font-bold';
+  modalTitle.textContent = 'Editar Aluno';
+  
+  const closeButton = document.createElement('button');
+  closeButton.innerHTML = '✕';
+  closeButton.className = 'text-gray-500 hover:text-gray-700';
+  
+  const form = document.createElement('form');
+  form.className = 'space-y-4';
+  
+  // Campos do formulário
+  const fields = [
+    { id: 'editNome', label: 'Nome', type: 'text' },
+    { id: 'editMatricula', label: 'Matrícula', type: 'text' },
+    { id: 'editDataNascimento', label: 'Data de Nascimento', type: 'date' },
+    { id: 'editTurmaId', label: 'ID da Turma', type: 'number' },
+    { id: 'editEscolaId', label: 'ID da Escola', type: 'number' }
+  ];
 
+  fields.forEach(field => {
+    const wrapper = document.createElement('div');
+    const label = document.createElement('label');
+    label.className = 'block text-sm font-medium text-gray-700';
+    label.textContent = field.label;
+    
+    const input = document.createElement('input');
+    input.type = field.type;
+    input.id = field.id;
+    input.required = true;
+    input.className = 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500';
+    
+    wrapper.appendChild(label);
+    wrapper.appendChild(input);
+    form.appendChild(wrapper);
+  });
+
+  // Botões de ação
+  const buttonWrapper = document.createElement('div');
+  buttonWrapper.className = 'flex justify-end space-x-3 mt-6';
+  
+  const cancelButton = document.createElement('button');
+  cancelButton.type = 'button';
+  cancelButton.textContent = 'Cancelar';
+  cancelButton.className = 'px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200';
+  
+  const submitButton = document.createElement('button');
+  submitButton.type = 'submit';
+  submitButton.textContent = 'Salvar Alterações';
+  submitButton.className = 'px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700';
+
+  // Montar estrutura
+  buttonWrapper.appendChild(cancelButton);
+  buttonWrapper.appendChild(submitButton);
+  form.appendChild(buttonWrapper);
+  
+  modalHeader.appendChild(modalTitle);
+  modalHeader.appendChild(closeButton);
+  modalContent.appendChild(modalHeader);
+  modalContent.appendChild(form);
+  modalOverlay.appendChild(modalContent);
+  
+  // Adicionar ao body
+  document.body.appendChild(modalOverlay);
+
+  // Função para fechar modal
+  const closeModal = () => document.body.removeChild(modalOverlay);
+  
+  // Event listeners
+  closeButton.addEventListener('click', closeModal);
+  cancelButton.addEventListener('click', closeModal);
+  modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) closeModal();
+  });
+
+  // Buscar dados do aluno
+  fetch(`/api/alunos/${studentId}`)
+    .then(response => {
+      if (!response.ok) throw new Error('Aluno não encontrado');
+      return response.json();
+    })
+    .then(aluno => {
+      document.getElementById('editNome').value = aluno.nome;
+      document.getElementById('editMatricula').value = aluno.matricula;
+      document.getElementById('editDataNascimento').value = aluno.data_nascimento;
+      document.getElementById('editTurmaId').value = aluno.turma_id;
+      document.getElementById('editEscolaId').value = aluno.escola_id;
+    })
+    .catch(error => {
+      console.error('Erro:', error);
+      alert(error.message);
+      closeModal();
+    });
+
+  // Handle form submission
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const updatedData = {
+      nome: document.getElementById('editNome').value,
+      matricula: document.getElementById('editMatricula').value,
+      data_nascimento: document.getElementById('editDataNascimento').value,
+      turma_id: parseInt(document.getElementById('editTurmaId').value),
+      escola_id: parseInt(document.getElementById('editEscolaId').value)
+    };
+
+    try {
+      const response = await fetch(`/api/alunos/${studentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+      });
+
+      if (!response.ok) throw new Error('Erro ao atualizar aluno');
+      
+      alert('Aluno atualizado com sucesso!');
+      closeModal();
+      // Atualize a interface aqui se necessário
+    } catch (error) {
+      console.error('Erro na atualização:', error);
+      alert(error.message);
+    }
+  });
+}
         // Função para renderizar a lista de alunos (com filtros aplicados)
         function renderStudentsList() {
             try {
