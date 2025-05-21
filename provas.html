@@ -6488,32 +6488,7 @@
                 });
             });
             
-            // Excluir avaliação
-            document.querySelectorAll(".deleteExam").forEach((button) => {
-                button.addEventListener("click", function () {
-                    const examId = parseInt(this.getAttribute("data-id"));
-                    const exams = getExams();
-                    const exam = exams.find((e) => e.id === examId);
-                    
-                    if (exam) {
-                        // Confirmar exclusão
-                        if (confirm(`Tem certeza que deseja excluir a prova "${exam.name}"?`)) {
-                            // Verificar se tem apiId para excluir na API
-                            if (exam.apiId) {
-                                deleteExamAPI(exam.apiId, examId);
-                            } else {
-                                // Se não tiver apiId, apenas excluir localmente
-                                removeExamLocally(examId);
-                                alert('Prova excluída com sucesso!');
-                                renderExamsList(); // Atualizar a lista após exclusão
-                            }
-                        }
-                    } else {
-                        alert("Avaliação não encontrada!");
-                    }
-                });
-            });
-        }
+         
         
         // Função para visualizar uma avaliação
         function viewExam(examId) {
