@@ -604,7 +604,7 @@
                     schoolSelect.innerHTML = '<option value="">Carregando escolas...</option>';
                     schoolSelect.disabled = true;
 
-                    const response = await fetch('https://sag-sag.rak8a3.easypanel.host/api/escolas', {
+                    const response = await fetch('https://sag-sag.rak8a3.easypanel.host/api/escolas?limit=1000', {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json'
