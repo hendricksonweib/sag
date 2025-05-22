@@ -77,7 +77,7 @@
                     <div class="mb-2">
                         <label for="schoolSearch" class="block text-sm font-medium text-gray-700">Buscar Escolas</label>
                     </div>
-                    <div class="flex space-x-2">
+                    <div class="flex flex-col md:flex-row md:space-x-3 space-y-3 md:space-y-0">
                         <div class="flex-1">
                             <div class="relative rounded-md shadow-sm">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -87,6 +87,18 @@
                                 <div class="absolute inset-y-0 right-0 pr-3 flex items-center" id="searchClearBtn" style="display: none; cursor: pointer;">
                                     <i class="fas fa-times-circle text-gray-400 hover:text-gray-600"></i>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-3">
+                            <div class="w-full md:w-48">
+                                <select id="regionFilter" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Todas as regiões</option>
+                                </select>
+                            </div>
+                            <div class="w-full md:w-48">
+                                <select id="groupFilter" class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="">Todos os grupos</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -621,23 +633,34 @@
             });
         }
         
-        // Função para filtrar escolas conforme digitação
-        function filterSchools(searchTerm) {
-            if (!searchTerm.trim()) {
-                // Se a busca estiver vazia, mostrar todas as escolas
-                currentPage = 1; // Resetar para primeira página
-                filteredResults = null; // Limpar filtros
-                renderSchoolsList();
-                return;
+        // Função para filtrar escolas conforme digitação e filtros selecionados
+        function filterSchools(searchTerm, regionId, groupId) {
+            let filteredSchools = allSchools;
+            
+            // Aplicar filtro de texto
+            if (searchTerm && searchTerm.trim() !== '') {
+                // Converter para minúsculo para comparação case-insensitive
+                const searchTermLower = searchTerm.toLowerCase();
+                
+                // Filtrar escolas que contêm o termo de busca no nome
+                filteredSchools = filteredSchools.filter(school => 
+                    school.name && school.name.toLowerCase().includes(searchTermLower)
+                );
             }
             
-            // Converter para minúsculo para comparação case-insensitive
-            const searchTermLower = searchTerm.toLowerCase();
+            // Aplicar filtro de região
+            if (regionId && regionId !== '') {
+                filteredSchools = filteredSchools.filter(school => 
+                    school.region_id && school.region_id.toString() === regionId.toString()
+                );
+            }
             
-            // Filtrar escolas que contêm o termo de busca no nome
-            const filteredSchools = allSchools.filter(school => 
-                school.name && school.name.toLowerCase().includes(searchTermLower)
-            );
+            // Aplicar filtro de grupo
+            if (groupId && groupId !== '') {
+                filteredSchools = filteredSchools.filter(school => 
+                    school.group_id && school.group_id.toString() === groupId.toString()
+                );
+            }
             
             // Resetar para primeira página quando filtrar
             currentPage = 1;
@@ -712,6 +735,10 @@
             
             // Carregar escolas da API
             loadSchoolsFromAPI();
+            
+            // Carregar regiões e grupos para os filtros
+            loadRegioesForFilter();
+            loadGruposForFilter();
 
             // Event listeners para navegação de páginas
             document.getElementById('prevPageBtn').addEventListener('click', () => {
@@ -749,6 +776,8 @@
             // Configurar barra de pesquisa
             const searchInput = document.getElementById('schoolSearch');
             const clearSearchBtn = document.getElementById('searchClearBtn');
+            const regionFilter = document.getElementById('regionFilter');
+            const groupFilter = document.getElementById('groupFilter');
             
             // Filtrar em tempo real conforme digitação
             searchInput.addEventListener('input', function() {
@@ -757,23 +786,65 @@
                 // Mostrar/ocultar botão de limpar
                 clearSearchBtn.style.display = searchTerm ? 'flex' : 'none';
                 
+                // Obter valores dos filtros
+                const regionId = regionFilter.value;
+                const groupId = groupFilter.value;
+                
                 // Filtrar escolas em tempo real
-                filterSchools(searchTerm);
+                filterSchools(searchTerm, regionId, groupId);
+            });
+            
+            // Filtrar quando a região mudar
+            regionFilter.addEventListener('change', function() {
+                const regionId = this.value;
+                const searchTerm = searchInput.value.trim();
+                const groupId = groupFilter.value;
+                
+                // Atualizar grupos baseado na região selecionada
+                if (regionId) {
+                    loadGruposForFilterByRegion(regionId);
+                } else {
+                    // Se não tiver região selecionada, carregar todos os grupos
+                    loadGruposForFilter();
+                }
+                
+                // Filtrar escolas
+                filterSchools(searchTerm, regionId, groupId);
+            });
+            
+            // Filtrar quando o grupo mudar
+            groupFilter.addEventListener('change', function() {
+                const groupId = this.value;
+                const searchTerm = searchInput.value.trim();
+                const regionId = regionFilter.value;
+                
+                // Filtrar escolas
+                filterSchools(searchTerm, regionId, groupId);
             });
             
             // Limpar busca ao clicar no X
             clearSearchBtn.addEventListener('click', function() {
                 searchInput.value = '';
                 clearSearchBtn.style.display = 'none';
-                currentPage = 1;
-                renderSchoolsList(); // Mostrar todas as escolas
+                
+                // Obter valores dos filtros
+                const regionId = regionFilter.value;
+                const groupId = groupFilter.value;
+                
+                // Aplicar filtros existentes sem o texto de busca
+                filterSchools('', regionId, groupId);
             });
             
             // Evitar refresh da página ao pressionar Enter
             searchInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    filterSchools(this.value.trim());
+                    
+                    // Obter valores dos filtros
+                    const regionId = regionFilter.value;
+                    const groupId = groupFilter.value;
+                    
+                    filterSchools(this.value.trim(), regionId, groupId);
                 }
             });
         });
@@ -1392,6 +1463,102 @@
             } catch (error) {
                 console.error('Erro ao carregar grupos:', error);
                 showToast('Erro ao carregar lista de grupos. Por favor, tente novamente.', 'error');
+            }
+        }
+
+        // Função para carregar regiões para o filtro
+        async function loadRegioesForFilter() {
+            try {
+                const response = await fetch('https://sag-sag.rak8a3.easypanel.host/api/regioes', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erro ao carregar regiões: ${response.status}`);
+                }
+
+                const regioes = await response.json();
+                console.log('Regiões carregadas para filtro:', regioes);
+
+                // Preencher o select de regiões
+                const regiaoSelect = document.getElementById('regionFilter');
+                regiaoSelect.innerHTML = '<option value="">Todas as regiões</option>';
+
+                if (Array.isArray(regioes)) {
+                    regioes.forEach(regiao => {
+                        regiaoSelect.innerHTML += `<option value="${regiao.id}">${regiao.nome}</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error('Erro ao carregar regiões para filtro:', error);
+                showToast('Erro ao carregar lista de regiões para filtro. Por favor, tente novamente.', 'error');
+            }
+        }
+        
+        // Função para carregar grupos para o filtro
+        async function loadGruposForFilter() {
+            try {
+                const response = await fetch('https://sag-sag.rak8a3.easypanel.host/api/grupos', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erro ao carregar grupos: ${response.status}`);
+                }
+
+                const grupos = await response.json();
+                console.log('Grupos carregados para filtro:', grupos);
+
+                // Preencher o select de grupos
+                const grupoSelect = document.getElementById('groupFilter');
+                grupoSelect.innerHTML = '<option value="">Todos os grupos</option>';
+
+                if (Array.isArray(grupos)) {
+                    grupos.forEach(grupo => {
+                        grupoSelect.innerHTML += `<option value="${grupo.id}">${grupo.nome}</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error('Erro ao carregar grupos para filtro:', error);
+                showToast('Erro ao carregar lista de grupos para filtro. Por favor, tente novamente.', 'error');
+            }
+        }
+        
+        // Função para carregar grupos filtrados por região para o filtro
+        async function loadGruposForFilterByRegion(regionId) {
+            try {
+                const response = await fetch(`https://sag-sag.rak8a3.easypanel.host/api/grupos?regiao_id=${regionId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erro ao carregar grupos: ${response.status}`);
+                }
+
+                const grupos = await response.json();
+                console.log('Grupos filtrados por região carregados:', grupos);
+
+                // Preencher o select de grupos
+                const grupoSelect = document.getElementById('groupFilter');
+                grupoSelect.innerHTML = '<option value="">Todos os grupos</option>';
+
+                if (Array.isArray(grupos)) {
+                    grupos.forEach(grupo => {
+                        grupoSelect.innerHTML += `<option value="${grupo.id}">${grupo.nome}</option>`;
+                    });
+                }
+            } catch (error) {
+                console.error('Erro ao carregar grupos filtrados por região:', error);
+                showToast('Erro ao carregar lista de grupos filtrados. Por favor, tente novamente.', 'error');
             }
         }
     </script>
