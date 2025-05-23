@@ -303,10 +303,10 @@
                     <!-- Paginação -->
                     <div class="px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
                         <div class="flex-1 flex justify-between sm:hidden">
-                            <button id="prevPageMobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            <button type="button" id="prevPageMobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                                 Anterior
                             </button>
-                            <button id="nextPageMobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            <button type="button" id="nextPageMobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                                 Próximo
                             </button>
                         </div>
@@ -318,14 +318,14 @@
                             </div>
                             <div>
                                 <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                                    <button id="prevPage" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <button type="button" id="prevPage" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                                         <span class="sr-only">Anterior</span>
                                         <i class="fas fa-chevron-left"></i>
                                     </button>
                                     <div id="paginationContainer" class="flex">
                                         <!-- Números de páginas serão inseridos dinamicamente -->
                                     </div>
-                                    <button id="nextPage" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <button type="button" id="nextPage" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                                         <span class="sr-only">Próximo</span>
                                         <i class="fas fa-chevron-right"></i>
                                     </button>
@@ -381,10 +381,10 @@
                     <!-- Paginação -->
                     <div class="px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
                         <div class="flex-1 flex justify-between sm:hidden">
-                            <button id="prevRankPageMobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            <button type="button" id="prevRankPageMobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                                 Anterior
                             </button>
-                            <button id="nextRankPageMobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            <button type="button" id="nextRankPageMobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                                 Próximo
                             </button>
                         </div>
@@ -396,14 +396,14 @@
                             </div>
                             <div>
                                 <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                                    <button id="prevRankPage" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <button type="button" id="prevRankPage" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                                         <span class="sr-only">Anterior</span>
                                         <i class="fas fa-chevron-left"></i>
                                     </button>
                                     <div id="rankPaginationContainer" class="flex">
                                         <!-- Números de páginas serão inseridos dinamicamente -->
                                     </div>
-                                    <button id="nextRankPage" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <button type="button" id="nextRankPage" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
                                         <span class="sr-only">Próximo</span>
                                         <i class="fas fa-chevron-right"></i>
                                     </button>
@@ -471,10 +471,22 @@
             document.getElementById('filterGroup').addEventListener('change', updateSchoolsFilter);
             
             // Configurar eventos de paginação
-            document.getElementById('prevPage')?.addEventListener('click', () => changePage(-1));
-            document.getElementById('nextPage')?.addEventListener('click', () => changePage(1));
-            document.getElementById('prevPageMobile')?.addEventListener('click', () => changePage(-1));
-            document.getElementById('nextPageMobile')?.addEventListener('click', () => changePage(1));
+            document.getElementById('prevPage')?.addEventListener('click', (event) => {
+                event.preventDefault();
+                changePage(-1);
+            });
+            document.getElementById('nextPage')?.addEventListener('click', (event) => {
+                event.preventDefault();
+                changePage(1);
+            });
+            document.getElementById('prevPageMobile')?.addEventListener('click', (event) => {
+                event.preventDefault();
+                changePage(-1);
+            });
+            document.getElementById('nextPageMobile')?.addEventListener('click', (event) => {
+                event.preventDefault();
+                changePage(1);
+            });
             
             // Adicionar evento para o botão de exportar DOCX
             const btnExportDocx = document.getElementById('btnExportDocx');
@@ -489,10 +501,22 @@
             }
             
             // Configurar eventos de paginação do ranking
-            document.getElementById('prevRankPage')?.addEventListener('click', () => changeRankPage(-1));
-            document.getElementById('nextRankPage')?.addEventListener('click', () => changeRankPage(1));
-            document.getElementById('prevRankPageMobile')?.addEventListener('click', () => changeRankPage(-1));
-            document.getElementById('nextRankPageMobile')?.addEventListener('click', () => changeRankPage(1));
+            document.getElementById('prevRankPage')?.addEventListener('click', (event) => {
+                event.preventDefault();
+                changeRankPage(-1);
+            });
+            document.getElementById('nextRankPage')?.addEventListener('click', (event) => {
+                event.preventDefault();
+                changeRankPage(1);
+            });
+            document.getElementById('prevRankPageMobile')?.addEventListener('click', (event) => {
+                event.preventDefault();
+                changeRankPage(-1);
+            });
+            document.getElementById('nextRankPageMobile')?.addEventListener('click', (event) => {
+                event.preventDefault();
+                changeRankPage(1);
+            });
         });
         
         // Função para carregar todos os dados do dashboard da API
@@ -1811,6 +1835,12 @@
         
         // Função para carregar dados de habilidades BNCC da API
         async function loadBnccSkills(year = 'all', region = 'all', group = 'all', school = 'all', grade = 'all', classId = 'all', results = 'all', page = 1) {
+            // LOG DE DEBUG: Rastrear todas as chamadas da função
+            console.log(`🔍 loadBnccSkills chamada com parâmetros:`, {
+                year, region, group, school, grade, classId, results, page,
+                currentPageAntes: currentPage
+            });
+            
             // Exibir indicador de carregamento
             document.getElementById('bnccSkillsList').innerHTML = '<div class="col-span-full text-center py-8"><i class="fas fa-spinner fa-spin text-blue-500 text-2xl"></i><p class="mt-2 text-gray-500">Carregando habilidades...</p></div>';
             
@@ -1854,7 +1884,11 @@
                     if (data && (data.content || data.items || data.data)) {
                         // Extrair conteúdo e informações de paginação
                         const content = data.content || data.items || data.data || [];
-                        currentPage = data.number !== undefined ? data.number + 1 : (data.page || page);
+                        
+                        // CORREÇÃO: Atualizar currentPage apenas se a requisição foi bem-sucedida
+                        // e garantir que a página solicitada seja a página atual
+                        console.log(`📄 Atualizando currentPage de ${currentPage} para ${page}`);
+                        currentPage = page;
                         totalBnccItems = data.totalElements || data.total || data.count || 0;
                         
                         // Formatar os dados para o formato usado pela UI
@@ -1944,6 +1978,10 @@
                         const startIndex = (page - 1) * itemsPerPage;
                         const endIndex = Math.min(startIndex + itemsPerPage, filteredSkills.length);
                         filteredSkills = filteredSkills.slice(startIndex, endIndex);
+                        
+                        // CORREÇÃO: Definir currentPage corretamente para paginação local
+                        console.log(`📄 (Array) Atualizando currentPage de ${currentPage} para ${page}`);
+                        currentPage = page;
                         
                         // Exibir os dados e atualizar paginação
                         displayBnccSkills();
@@ -2618,13 +2656,17 @@
             // Adicionar botões de página
             for (let i = startPage; i <= endPage; i++) {
                 const pageButton = document.createElement('button');
+                pageButton.type = 'button'; // Especificar tipo do botão
                 pageButton.className = `relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                     i === currentPage 
                         ? 'bg-blue-50 border-blue-500 text-blue-600 z-10' 
                         : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                 }`;
                 pageButton.textContent = i;
-                pageButton.addEventListener('click', () => goToPage(i));
+                pageButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    goToPage(i);
+                });
                 paginationContainer.appendChild(pageButton);
             }
             
@@ -2641,16 +2683,28 @@
             const totalPages = Math.ceil(totalBnccItems / itemsPerPage);
             const newPage = currentPage + delta;
             
+            console.log(`Mudando página: currentPage=${currentPage}, delta=${delta}, newPage=${newPage}, totalPages=${totalPages}`);
+            
             if (newPage >= 1 && newPage <= totalPages) {
                 // Recarregar dados do servidor para a nova página
-                // Obter os filtros atuais
-                const yearFilter = document.getElementById('filterYear').value;
-                const regionFilter = document.getElementById('filterRegion').value;
-                const groupFilter = document.getElementById('filterGroup').value;
-                const schoolFilter = document.getElementById('filterSchool').value;
-                const gradeFilter = document.getElementById('filterGrade').value;
-                const classFilter = document.getElementById('filterClass').value;
-                const resultsFilter = document.getElementById('filterResults').value;
+                // Obter os filtros atuais de forma segura
+                const yearFilter = document.getElementById('filterYear')?.value || 'all';
+                const regionFilter = document.getElementById('filterRegion')?.value || 'all';
+                const groupFilter = document.getElementById('filterGroup')?.value || 'all';
+                const schoolFilter = document.getElementById('filterSchool')?.value || 'all';
+                const gradeFilter = document.getElementById('filterGrade')?.value || 'all';
+                const classFilter = document.getElementById('filterClass')?.value || 'all';
+                const resultsFilter = document.getElementById('filterResults')?.value || 'all';
+                
+                console.log(`Carregando página ${newPage} com filtros:`, {
+                    year: yearFilter,
+                    region: regionFilter,
+                    group: groupFilter,
+                    school: schoolFilter,
+                    grade: gradeFilter,
+                    class: classFilter,
+                    results: resultsFilter
+                });
                 
                 // Carregar dados da nova página do servidor
                 loadBnccSkills(
@@ -2663,19 +2717,33 @@
                     resultsFilter, 
                     newPage
                 );
+            } else {
+                console.warn(`Página ${newPage} está fora do intervalo válido (1-${totalPages})`);
             }
         }
         
         // Função para ir para uma página específica
         function goToPage(page) {
-            // Obter os filtros atuais
-            const yearFilter = document.getElementById('filterYear').value;
-            const regionFilter = document.getElementById('filterRegion').value;
-            const groupFilter = document.getElementById('filterGroup').value;
-            const schoolFilter = document.getElementById('filterSchool').value;
-            const gradeFilter = document.getElementById('filterGrade').value;
-            const classFilter = document.getElementById('filterClass').value;
-            const resultsFilter = document.getElementById('filterResults').value;
+            console.log(`Indo para página específica: ${page}, currentPage atual: ${currentPage}`);
+            
+            // Obter os filtros atuais de forma segura
+            const yearFilter = document.getElementById('filterYear')?.value || 'all';
+            const regionFilter = document.getElementById('filterRegion')?.value || 'all';
+            const groupFilter = document.getElementById('filterGroup')?.value || 'all';
+            const schoolFilter = document.getElementById('filterSchool')?.value || 'all';
+            const gradeFilter = document.getElementById('filterGrade')?.value || 'all';
+            const classFilter = document.getElementById('filterClass')?.value || 'all';
+            const resultsFilter = document.getElementById('filterResults')?.value || 'all';
+            
+            console.log(`Carregando página ${page} com filtros:`, {
+                year: yearFilter,
+                region: regionFilter,
+                group: groupFilter,
+                school: schoolFilter,
+                grade: gradeFilter,
+                class: classFilter,
+                results: resultsFilter
+            });
             
             // Carregar dados da página específica do servidor
             loadBnccSkills(
@@ -3190,13 +3258,17 @@
             // Adicionar botões de página
             for (let i = startPage; i <= endPage; i++) {
                 const pageButton = document.createElement('button');
+                pageButton.type = 'button'; // Especificar tipo do botão
                 pageButton.className = `relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                     i === currentRankPage 
                         ? 'bg-blue-50 border-blue-500 text-blue-600 z-10' 
                         : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                 }`;
                 pageButton.textContent = i;
-                pageButton.addEventListener('click', () => goToRankPage(i));
+                pageButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    goToRankPage(i);
+                });
                 paginationContainer.appendChild(pageButton);
             }
             
