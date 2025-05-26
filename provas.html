@@ -3273,6 +3273,11 @@
                             }" title="Baixar PDF">
                                 <i class="fas fa-file-pdf"></i>
                             </button>
+                            <button class="text-purple-600 hover:text-purple-900 downloadExam" data-id="${
+                              exam.id
+                            }" title="Excluir prova">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>
                     </div>
                 `;
@@ -14703,7 +14708,14 @@
                                 </div>
                             </div>
                         </div>
-                                                <div class="flex space-x-2">                            <button onclick="visualizarProva(${exam.apiId || exam.id})" class="bg-white text-blue-500 p-2 rounded-full hover:bg-blue-100 border border-gray-200" data-id="${exam.id}" title="Visualizar Prova"><i class="fas fa-eye"></i></button>                            <button class="text-blue-600 hover:text-blue-900 editExam" data-id="${                              exam.id                            }" title="Editar">                                <i class="fas fa-edit"></i>                            </button>                            <button class="text-indigo-600 hover:text-indigo-900 editQuestionsExam" data-id="${                              exam.id                            }" data-api-id="${exam.apiId || ''}" title="Editar Questões">                                <i class="fas fa-list-check"></i>                            </button>                            <button class="text-purple-600 hover:text-purple-900 downloadExam" data-id="${                              exam.id                            }" title="Baixar PDF">                                <i class="fas fa-file-pdf"></i>                            </button>                        </div>
+                                                <div class="flex space-x-2">                            <button onclick="visualizarProva(${exam.apiId || exam.id})" class="bg-white text-blue-500 p-2 rounded-full hover:bg-blue-100 border border-gray-200" data-id="${exam.id}" title="Visualizar Prova"><i class="fas fa-eye"></i></button>                            <button class="text-blue-600 hover:text-blue-900 editExam" data-id="${                              exam.id                            }" title="Editar">                                <i class="fas fa-edit"></i>                            </button>                            <button class="text-indigo-600 hover:text-indigo-900 editQuestionsExam" data-id="${                              exam.id                            }" data-api-id="${exam.apiId || ''}" title="Editar Questões">                                <i class="fas fa-list-check"></i>                            </button>                            <button class="text-purple-600 hover:text-purple-900 downloadExam" data-id="${                              exam.id                            }" title="Baixar PDF">                                <i class="fas fa-file-pdf"></i>                            </button>                        
+                                                  <button class="text-red-600 hover:text-red-900" 
+        onclick="handleDeleteExam('${exam.id}')" 
+        data-id="${exam.id}" 
+        title="Excluir prova">
+    <i class="fas fa-trash"></i>
+</button>
+                            </div>
                     </div>
                 `;
                 
@@ -15068,53 +15080,92 @@
         }
         
         // Função para excluir uma avaliação
-        async function deleteExam(examId) {
-            try {
-                if (!examId) {
-                    throw new Error("ID da prova não fornecido");
-                }
+        async function handleDeleteExam(examId) {
+    // Confirmação antes de excluir
+    const confirmed = confirm("Tem certeza que deseja excluir esta prova? Esta ação não pode ser desfeita.");
+    
+    if (confirmed) {
+        await deleteExam(examId);
+    }
+}
 
-                // URL da API para exclusão de provas
-                const deleteUrl = `https://sag-sag.rak8a3.easypanel.host/api/provas/${examId}`;
-                console.log(`Enviando requisição DELETE para: ${deleteUrl}`);
-                
-                const response = await fetch(deleteUrl, {
-                    method: "DELETE",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json"
-                    }
-                });
-                
-                // Verificar resultado da requisição
-                if (response.ok) {
-                    console.log(`Prova ID ${examId} excluída com sucesso da API`);
-                    
-                    // Atualizar a lista local de provas
-                    let exams = getExams();
-                    exams = exams.filter(e => e.id !== examId);
-                    localStorage.setItem("exams", JSON.stringify(exams));
-                    
-                    // Atualizar a interface
-                    renderExamsList();
-                    
-                    // Mostrar mensagem de sucesso
-                    showSuccessModal("Prova Excluída", "A prova foi excluída com sucesso!");
-                    
-                    return true;
-                } else {
-                    const errorText = await response.text().catch(() => "Erro desconhecido");
-                    const statusText = response.status === 404 ? "Prova não encontrada" : `Erro ${response.status}`;
-                    console.error(`Erro ao excluir prova na API. Status: ${response.status}, Detalhes: ${errorText}`);
-                    alert(`Erro ao excluir prova: ${statusText}`);
-                    return false;
-                }
-            } catch (error) {
-                console.error("Erro ao excluir prova:", error);
-                alert(`Erro ao excluir prova: ${error.message}`);
-                return false;
-            }
+// Função para excluir uma avaliação (corrigida)
+async function deleteExam(examId) {
+    try {
+        // Validação do ID
+        if (!examId || examId === 'undefined' || examId === 'null') {
+            throw new Error("ID da prova não fornecido ou inválido");
         }
+
+        console.log(`Tentando excluir prova com ID: ${examId}`);
+
+        // URL da API para exclusão de provas
+        const deleteUrl = `https://sag-sag.rak8a3.easypanel.host/api/provas/${examId}`;
+        console.log(`Enviando requisição DELETE para: ${deleteUrl}`);
+        
+        const response = await fetch(deleteUrl, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        });
+        
+        // Verificar resultado da requisição
+        if (response.ok) {
+            console.log(`Prova ID ${examId} excluída com sucesso da API`);
+            
+            // Atualizar a lista local de provas
+            let exams = getExams() || [];
+            exams = exams.filter(e => e.id != examId); // Usando != para comparar string e number
+            localStorage.setItem("exams", JSON.stringify(exams));
+            
+            // Atualizar a interface
+            if (typeof renderExamsList === 'function') {
+                renderExamsList();
+            }
+            
+            // Mostrar mensagem de sucesso
+            if (typeof showSuccessModal === 'function') {
+                showSuccessModal("Prova Excluída", "A prova foi excluída com sucesso!");
+            } else {
+                alert("Prova excluída com sucesso!");
+            }
+            
+            return true;
+        } else {
+            const errorText = await response.text().catch(() => "Erro desconhecido");
+            const statusText = response.status === 404 ? "Prova não encontrada" : `Erro ${response.status}`;
+            console.error(`Erro ao excluir prova na API. Status: ${response.status}, Detalhes: ${errorText}`);
+            alert(`Erro ao excluir prova: ${statusText}`);
+            return false;
+        }
+    } catch (error) {
+        console.error("Erro ao excluir prova:", error);
+        alert(`Erro ao excluir prova: ${error.message}`);
+        return false;
+    }
+}
+
+// Alternativa usando event delegation (mais eficiente se você tem muitos botões)
+// Adicione este código uma vez quando a página carregar:
+document.addEventListener('click', function(event) {
+    // Verifica se o clique foi em um botão de excluir ou em seu ícone
+    const deleteButton = event.target.closest('button[data-id]');
+    
+    if (deleteButton && deleteButton.title === 'Excluir prova') {
+        event.preventDefault();
+        
+        const examId = deleteButton.getAttribute('data-id');
+        
+        if (examId) {
+            handleDeleteExam(examId);
+        } else {
+            console.error('ID da prova não encontrado no botão');
+            alert('Erro: ID da prova não encontrado');
+        }
+    }
+});
         
         // Função para obter todas as avaliações
         function getExams() {
