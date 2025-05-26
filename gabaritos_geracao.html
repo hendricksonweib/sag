@@ -78,12 +78,12 @@
                 <!-- Page header -->
                 <div class="px-4 py-5 sm:px-6 bg-white shadow rounded-lg mb-6">
                     <h1 class="text-2xl font-bold text-gray-900">Geração de Gabaritos</h1>
-                    <p class="mt-1 max-w-2xl text-sm text-gray-500">Selecione a escola, turma e prova para gerar os gabaritos em PDF.</p>
+                    <p class="mt-1 max-w-2xl text-sm text-gray-500">Selecione a escola, série e prova para gerar os gabaritos em PDF.</p>
                 </div>
 
                 <!-- Selection Section -->
                 <div class="mb-6 p-4 bg-white shadow rounded-lg">
-                    <h4 class="font-medium text-gray-700 mb-3">1. Selecione a Escola, Turma e Prova</h4>
+                    <h4 class="font-medium text-gray-700 mb-3">1. Selecione a Escola, Série e Prova</h4>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div> <!-- Escola -->
                             <label for="schoolSelect" class="block text-sm font-medium text-gray-700">Escola</label>
@@ -91,8 +91,8 @@
                                 <option value="">Selecione uma escola</option>
                             </select>
                         </div>
-                        <div> <!-- Turma -->
-                            <label for="classSelect" class="block text-sm font-medium text-gray-700">Turma</label>
+                        <div> <!-- Série -->
+                            <label for="classSelect" class="block text-sm font-medium text-gray-700">Série</label>
                             <select id="classSelect" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border" disabled>
                                 <option value="">Selecione uma escola primeiro</option>
                             </select>
@@ -200,10 +200,10 @@
     <script>
         // Variáveis globais
         let currentSchoolId = null;
-        let currentClassId = null;
+        let currentClassId = null; // Agora representa a série selecionada
         let currentExamId = null;
         let currentExam = null; // Para guardar detalhes da prova selecionada
-        let currentClassStudents = []; // Para guardar alunos da turma selecionada
+        let currentClassStudents = []; // Para guardar alunos da série selecionada
 
         // --- Funções Utilitárias --- 
         // (Assume que getSchools, getClasses, getExams, getStudents vêm de app.js)
@@ -244,7 +244,7 @@
         // --- Manipuladores de Eventos --- 
         async function handleSchoolSelection() {
             currentSchoolId = parseInt(document.getElementById('schoolSelect').value) || null;
-            resetSelection(false, true, true); // Reseta turma e prova
+            resetSelection(false, true, true); // Reseta série e prova
             
             const classSelect = document.getElementById('classSelect');
             
@@ -255,11 +255,11 @@
             }
 
             try {
-                classSelect.innerHTML = '<option value="">Carregando turmas...</option>';
+                classSelect.innerHTML = '<option value="">Carregando séries...</option>';
                 classSelect.disabled = true;
 
-                // Buscar turmas da escola selecionada
-                const response = await fetch(`https://sag-sag.rak8a3.easypanel.host/api/turmas?escola_id=${currentSchoolId}`, {
+                // Buscar séries da escola selecionada
+                const response = await fetch(`https://sag-sag.rak8a3.easypanel.host/api/obter-series-escola?escola_id=${currentSchoolId}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
@@ -267,95 +267,77 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Erro ao carregar turmas: ${response.status}`);
+                    throw new Error(`Erro ao carregar séries: ${response.status}`);
                 }
 
                 const data = await response.json();
-                console.log('API turmas response:', data); // Log para depuração
+                console.log('API séries response:', data); // Log para depuração
                 
-                // Garantir que classes seja um array
-                let classes = [];
+                // A API retorna um array de strings com as séries
+                let series = [];
                 
                 if (Array.isArray(data)) {
-                    classes = data;
-                } else if (data && typeof data === 'object') {
-                    // Tentar diferentes propriedades possíveis que possam conter o array de turmas
-                    if (Array.isArray(data.turmas)) classes = data.turmas;
-                    else if (Array.isArray(data.items)) classes = data.items;
-                    else if (Array.isArray(data.data)) classes = data.data;
-                    else if (Array.isArray(data.results)) classes = data.results;
-                    else if (Array.isArray(data.content)) classes = data.content;
-                    // Última tentativa: extrair todas as chaves que contenham objetos com propriedades necessárias
-                    else {
-                        classes = Object.values(data).filter(item => 
-                            item && typeof item === 'object' && item.nome && item.id
-                        );
-                    }
+                    series = data;
+                } else {
+                    console.warn('Resposta da API não é um array:', data);
+                    series = [];
                 }
                 
                 // Log para depuração
-                console.log('Turmas encontradas:', classes);
-                console.log('É array?', Array.isArray(classes));
+                console.log('Séries encontradas:', series);
+                console.log('É array?', Array.isArray(series));
                 
                 // Resetar o select
-                classSelect.innerHTML = '<option value="">Selecione uma turma</option>';
+                classSelect.innerHTML = '<option value="">Selecione uma série</option>';
                 
-                // Se temos turmas, ordenar e adicionar ao select
-                if (Array.isArray(classes) && classes.length > 0) {
-                    // Usar slice para criar uma cópia do array antes de ordenar
-                    const classesToSort = classes.slice();
+                // Se temos séries, adicionar ao select
+                if (Array.isArray(series) && series.length > 0) {
+                    // Mapeamento para nomes mais amigáveis
+                    const serieNames = {
+                        'PRIMEIRO_ANO': '1º Ano',
+                        'SEGUNDO_ANO': '2º Ano',
+                        'TERCEIRO_ANO': '3º Ano',
+                        'QUARTO_ANO': '4º Ano',
+                        'QUINTO_ANO': '5º Ano',
+                        'SEXTO_ANO': '6º Ano',
+                        'SETIMO_ANO': '7º Ano',
+                        'OITAVO_ANO': '8º Ano',
+                        'NONO_ANO': '9º Ano',
+                        'PRIMEIRA_SERIE': '1ª Série',
+                        'SEGUNDA_SERIE': '2ª Série',
+                        'TERCEIRA_SERIE': '3ª Série'
+                    };
                     
-                    try {
-                        // Ordenar turmas por nome com tratamento de erro
-                        classesToSort.sort((a, b) => {
-                            const nameA = a && a.nome ? String(a.nome) : '';
-                            const nameB = b && b.nome ? String(b.nome) : '';
-                            return nameA.localeCompare(nameB);
-                        });
-                        
-                        // Adicionar as turmas ordenadas
-                        classesToSort.forEach(cls => {
-                            if (cls && cls.id && cls.nome) {
-                        const option = document.createElement('option');
-                        option.value = cls.id;
-                        option.textContent = cls.nome;
-                        classSelect.appendChild(option);
-                            }
-                        });
-                    } catch (sortError) {
-                        console.error('Erro ao ordenar turmas:', sortError);
-                        
-                        // Se falhar ao ordenar, adicionar sem ordenação
-                        classes.forEach(cls => {
-                            if (cls && cls.id && cls.nome) {
-                                const option = document.createElement('option');
-                                option.value = cls.id;
-                                option.textContent = cls.nome;
-                                classSelect.appendChild(option);
-                            }
+                    // Adicionar as séries ao select
+                    series.forEach(serie => {
+                        if (serie && typeof serie === 'string') {
+                            const option = document.createElement('option');
+                            option.value = serie;
+                            option.textContent = serieNames[serie] || serie;
+                            classSelect.appendChild(option);
+                        }
                     });
-                    }
                 
-                classSelect.disabled = false;
+                    classSelect.disabled = false;
                 } else {
-                    classSelect.innerHTML = '<option value="">Nenhuma turma encontrada</option>';
+                    classSelect.innerHTML = '<option value="">Nenhuma série encontrada</option>';
                     classSelect.disabled = true;
                 }
             } catch (error) {
-                console.error('Erro ao carregar turmas:', error);
-                classSelect.innerHTML = '<option value="">Erro ao carregar turmas: ' + error.message + '</option>';
+                console.error('Erro ao carregar séries:', error);
+                classSelect.innerHTML = '<option value="">Erro ao carregar séries: ' + error.message + '</option>';
                 classSelect.disabled = true;
             }
         }
 
         async function handleClassSelection() {
-            currentClassId = parseInt(document.getElementById('classSelect').value) || null;
+            currentClassId = document.getElementById('classSelect').value || null; // Agora é a série selecionada
             resetSelection(false, false, true); // Reseta apenas a prova
             
             const examSelect = document.getElementById('examSelect');
             
             if (!currentClassId) {
-                examSelect.innerHTML = '<option value="">Selecione uma turma primeiro</option>';
+                examSelect.innerHTML = '<option value="">Selecione uma série primeiro</option>';
                 examSelect.disabled = true;
                 return;
             }
@@ -364,8 +346,8 @@
                 examSelect.innerHTML = '<option value="">Carregando provas...</option>';
                 examSelect.disabled = true;
 
-                // Buscar provas da turma selecionada
-                const response = await fetch(`https://sag-sag.rak8a3.easypanel.host/api/provas?turma_id=${currentClassId}`, {
+                // Buscar provas da série selecionada
+                const response = await fetch(`https://sag-sag.rak8a3.easypanel.host/api/provas?serie=${currentClassId}&escola_id=${currentSchoolId}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
@@ -487,8 +469,8 @@
                 // Garantir que temos uma estrutura válida para a prova
                 currentExam = examData;
 
-                // Buscar alunos da turma
-                const studentsResponse = await fetch(`https://sag-sag.rak8a3.easypanel.host/api/alunos?turma_id=${currentClassId}`, {
+                // Buscar alunos da série
+                const studentsResponse = await fetch(`https://sag-sag.rak8a3.easypanel.host/api/alunos?serie=${currentClassId}&escola_id=${currentSchoolId}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
@@ -542,7 +524,7 @@
                         console.warn('Prova não encontrada');
                     }
                     if (currentClassStudents.length === 0) {
-                        console.warn('Nenhum aluno encontrado na turma');
+                        console.warn('Nenhum aluno encontrado na série');
                     }
                 }
             } catch (error) {
@@ -555,7 +537,7 @@
         function resetSelection(resetClass = true, resetExam = true, resetAction = true) {
             if (resetClass) {
                 const classSelect = document.getElementById('classSelect');
-                classSelect.innerHTML = `<option value="">${currentSchoolId ? 'Selecione uma turma' : 'Selecione uma escola primeiro'}</option>`;
+                classSelect.innerHTML = `<option value="">${currentSchoolId ? 'Selecione uma série' : 'Selecione uma escola primeiro'}</option>`;
                 classSelect.disabled = true;
                 currentClassId = null;
                 currentClass = null;
@@ -563,7 +545,7 @@
             }
             if (resetExam) {
                 const examSelect = document.getElementById('examSelect');
-                examSelect.innerHTML = `<option value="">${currentClassId ? 'Selecione uma prova' : 'Selecione uma turma primeiro'}</option>`;
+                examSelect.innerHTML = `<option value="">${currentClassId ? 'Selecione uma prova' : 'Selecione uma série primeiro'}</option>`;
                 examSelect.disabled = true;
                 currentExamId = null;
                 currentExam = null;
@@ -1202,7 +1184,8 @@
                 // Criar payload para a API
                 const formData = new FormData();
                 formData.append('exam_id', currentExamId);
-                formData.append('classroom_id', currentClassId);
+                formData.append('serie', currentClassId);
+                formData.append('escola_id', currentSchoolId);
                 formData.append('question', questionCount);
                 
                 // Adicione informações opcionais
@@ -1219,7 +1202,8 @@
                 // Alternativa 1: Enviar como JSON diretamente (mais provável que seja o formato esperado)
                 const jsonPayload = {
                     exam_id: parseInt(currentExamId),
-                    classroom_id: parseInt(currentClassId),
+                    serie: currentClassId,
+                    escola_id: parseInt(currentSchoolId),
                     question: questionCount
                 };
 
@@ -1301,7 +1285,7 @@
                 
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `Gabaritos_${examData.nome.replace(/[^a-zA-Z0-9]/g, '_')}_Turma_${currentClassId}.${fileExtension}`;
+                a.download = `Gabaritos_${examData.nome.replace(/[^a-zA-Z0-9]/g, '_')}_Serie_${currentClassId}.${fileExtension}`;
                 document.body.appendChild(a);
                 a.click();
                 
@@ -1331,7 +1315,7 @@
                         // Iniciar download automaticamente
                         const a = document.createElement('a');
                         a.href = responseData.file_url;
-                        a.download = `Gabaritos_${examData.nome.replace(/[^a-zA-Z0-9]/g, '_')}_Turma_${currentClassId}.pdf`;
+                        a.download = `Gabaritos_${examData.nome.replace(/[^a-zA-Z0-9]/g, '_')}_Serie_${currentClassId}.pdf`;
                         document.body.appendChild(a);
                         a.click();
                         
@@ -1367,7 +1351,7 @@
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `Gabaritos_${examData.nome.replace(/[^a-zA-Z0-9]/g, '_')}_Turma_${currentClassId}.zip`;
+                    a.download = `Gabaritos_${examData.nome.replace(/[^a-zA-Z0-9]/g, '_')}_Serie_${currentClassId}.zip`;
                     document.body.appendChild(a);
                     a.click();
                     
