@@ -7633,11 +7633,7 @@
                             }" title="Baixar PDF">
                                 <i class="fas fa-file-pdf"></i>
                             </button>
-                            <button class="text-purple-600 hover:text-purple-900 downloadExam" data-id="${
-                              exam.id
-                            }" title="Excluir prova">
-                                <i class="fas fa-trash"></i>
-                            </button>
+    
                         </div>
                     </div>
                 `;
@@ -17963,14 +17959,6 @@
                             });
                         }
                         
-              const optionE = document.getElementById("optionE").value.trim();
-                        if (optionE) {
-                            alternativas.push({
-                                texto: optionE,
-                  correta: correctAnswer === "E",
-                            });
-                        }
-                        
                         // Obter ID da prova atual
               const prova_id = parseInt(currentExamData.apiId, 10);
                         
@@ -18036,8 +18024,7 @@
                                 A: optionA || '',
                                 B: optionB || '',
                                 C: optionC || '',
-                                D: optionD || '',
-                                E: optionE || ''
+                                D: optionD || ''
                             },
                             alternativas: alternativas.map(alt => ({
                                 letra: alt.letra || "",
@@ -19181,12 +19168,6 @@
                             </div>
                         </div>
                                                 <div class="flex space-x-2">                            <button onclick="visualizarProva(${exam.apiId || exam.id})" class="bg-white text-blue-500 p-2 rounded-full hover:bg-blue-100 border border-gray-200" data-id="${exam.id}" title="Visualizar Prova"><i class="fas fa-eye"></i></button>                            <button class="text-blue-600 hover:text-blue-900 editExam" data-id="${                              exam.id                            }" title="Editar">                                <i class="fas fa-edit"></i>                            </button>                            <button class="text-indigo-600 hover:text-indigo-900 editQuestionsExam" data-id="${                              exam.id                            }" data-api-id="${exam.apiId || ''}" title="Editar Questões">                                <i class="fas fa-list-check"></i>                            </button>                            <button class="text-purple-600 hover:text-purple-900 downloadExam" data-id="${                              exam.id                            }" title="Baixar PDF">                                <i class="fas fa-file-pdf"></i>                            </button>                        
-                                                  <button class="text-red-600 hover:text-red-900" 
-        onclick="handleDeleteExam('${exam.id}')" 
-        data-id="${exam.id}" 
-        title="Excluir prova">
-    <i class="fas fa-trash"></i>
-</button>
                             </div>
                     </div>
                 `;
@@ -19673,11 +19654,10 @@ document.addEventListener('click', function(event) {
                     options.B = question.options.B || '';
                     options.C = question.options.C || '';
                     options.D = question.options.D || '';
-                    options.E = question.options.E || '';
                 }
                 // Caso 2: Se tem um array de alternativas
                 else if (question.alternativas && Array.isArray(question.alternativas)) {
-                    const letters = ['A', 'B', 'C', 'D', 'E'];
+                    const letters = ['A', 'B', 'C', 'D'];
                     question.alternativas.forEach((alt, index) => {
                         if (index < letters.length) {
                             const letra = letters[index];
@@ -21901,10 +21881,9 @@ document.addEventListener('click', function(event) {
                     document.getElementById("editOptionB").value = "";
                     document.getElementById("editOptionC").value = "";
                     document.getElementById("editOptionD").value = "";
-                    document.getElementById("editOptionE").value = "";
                     
                     // Preencher alternativas disponíveis
-                    const letters = ['A', 'B', 'C', 'D', 'E'];
+                    const letters = ['A', 'B', 'C', 'D'];
                     
                     question.alternativas.forEach((alt, index) => {
                         if (index < letters.length) {
@@ -21924,7 +21903,6 @@ document.addEventListener('click', function(event) {
                     if (question.alternativa_b) document.getElementById("editOptionB").value = question.alternativa_b;
                     if (question.alternativa_c) document.getElementById("editOptionC").value = question.alternativa_c;
                     if (question.alternativa_d) document.getElementById("editOptionD").value = question.alternativa_d;
-                    if (question.alternativa_e) document.getElementById("editOptionE").value = question.alternativa_e;
                     
                     if (question.resposta_correta) {
                         correctAnswer = question.resposta_correta;
@@ -21985,8 +21963,6 @@ document.addEventListener('click', function(event) {
             const newCancelBtn = cancelBtn.cloneNode(true);
             cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
             
-            const newDeleteBtn = deleteBtn.cloneNode(true);
-            deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
             
             const newEditForm = editForm.cloneNode(true);
             editForm.parentNode.replaceChild(newEditForm, editForm);
@@ -22085,14 +22061,7 @@ document.addEventListener('click', function(event) {
                     });
                 }
                 
-                const optionE = document.getElementById("editOptionE").value;
-                if (optionE) {
-                    alternativas.push({
-                        texto: optionE,
-                        correta: correctAnswer === "E"
-                    });
-                }
-                
+               
                 // Validar se temos pelo menos duas alternativas
                 if (alternativas.length < 2) {
                     alert("Por favor, adicione pelo menos duas alternativas.");
