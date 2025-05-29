@@ -2366,84 +2366,62 @@
             return newExam;
         }
         
-        // Função para popular o seletor de avaliações
-      async function populateSchoolSelector() {
+        async function populateSchoolSelector() {
     const schoolSelect = document.getElementById("linkSchool");
-    if (!schoolSelect) {
-        console.warn("Elemento linkSchool não encontrado");
-        return;
-    }
-
+    if (!schoolSelect) return;
+    
     try {
         // Mostrar indicador de carregamento
         schoolSelect.innerHTML = '<option value="">Carregando escolas...</option>';
         schoolSelect.disabled = true;
-
-        const response = await fetch("https://sag-sag.rak8a3.easypanel.host/api/escolas", {
-            method: "GET",
-            headers: { "Content-Type": "application/json" }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Erro ${response.status}: ${response.statusText}`);
-        }
-
-        const result = await response.json();
         
-        // EXTRAÇÃO SEGURA DA LISTA DE ESCOLAS
-        let schools = [];
-        
-        // Caso 1: Resposta paginada (com propriedade data)
-        if (result && Array.isArray(result.data)) {
-            schools = result.data;
-        } 
-        // Caso 2: Resposta direta (array)
-        else if (Array.isArray(result)) {
-            schools = result;
-        }
-        // Caso 3: Resposta inesperada
-        else {
-            console.error("Formato inesperado dos dados:", result);
-            throw new Error("Formato de dados não reconhecido");
-        }
-
-        // PREPARAÇÃO DO SELECT
-        schoolSelect.innerHTML = '<option value="">Selecione uma escola</option>';
-
-        // VERIFICAÇÃO FINAL DO ARRAY
-        if (!Array.isArray(schools)) {
-            console.error("Dados finais não são um array:", schools);
-            schools = []; // Força array vazio para evitar erros
-        }
-
-        // POPULAÇÃO SEGURA
-        const fragment = document.createDocumentFragment();
-        
-        schools.forEach(school => {
-            try {
-                // Validação rigorosa de cada item
-                if (school && typeof school === 'object') {
-                    const option = new Option(
-                        school.nome || "Escola sem nome",
-                        school.id || ""
-                    );
-                    fragment.appendChild(option);
-                }
-            } catch (e) {
-                console.warn("Item inválido ignorado:", school, e);
+        // Buscar escolas da API
+        const response = await fetch(
+            "https://sag-sag.rak8a3.easypanel.host/api/escolas?page=1&limit=100",
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
             }
+        );
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao carregar escolas. Status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // DEBUG: Mostrar resposta da API no console
+        console.log("Resposta da API:", data);
+        
+        // Verificar a estrutura dos dados
+        const schools = data.escolas || data.data || data; // Tenta diferentes formatos
+        
+        // Limpar seletor
+        schoolSelect.innerHTML = '<option value="">Selecione uma escola</option>';
+        
+        // Verificar se há escolas
+        if (!schools || schools.length === 0) {
+            schoolSelect.innerHTML = '<option value="">Nenhuma escola encontrada</option>';
+            return;
+        }
+        
+        // Adicionar cada escola ao seletor
+        schools.forEach((school) => {
+            const option = document.createElement("option");
+            option.value = school.id;
+            option.textContent = school.nome || "Escola sem nome";
+            schoolSelect.appendChild(option);
         });
-
-        schoolSelect.appendChild(fragment);
-
+        
     } catch (error) {
-        console.error("Erro ao carregar escolas:", error);
-        schoolSelect.innerHTML = `<option value="">Erro: ${error.message.split(':')[0]}</option>`;
+        console.error("Erro ao buscar escolas:", error);
+        schoolSelect.innerHTML = '<option value="">Erro ao carregar escolas</option>';
     } finally {
         schoolSelect.disabled = false;
     }
 }
-
         // Função para popular o seletor de turmas
         async function populateClassSelector(schoolId) {
         const classSelect = document.getElementById("linkClass");
@@ -8069,54 +8047,128 @@
         }
         
         // Função para popular o seletor de escolas
-        async function populateSchoolSelector() {
-        const schoolSelect = document.getElementById("linkSchool");
-            if (!schoolSelect) return;
-            
-            try {
-                // Mostrar indicador de carregamento
-          schoolSelect.innerHTML =
-            '<option value="">Carregando escolas...</option>';
-                schoolSelect.disabled = true;
-                
-                // Buscar escolas da API
-          const response = await fetch(
+       // Função para popular o seletor de escolas
+async function populateSchoolSelector() {
+    const schoolSelect = document.getElementById("linkSchool");
+    if (!schoolSelect) return;
+    
+    try {
+        // Mostrar indicador de carregamento
+        schoolSelect.innerHTML = '<option value="">Carregando escolas...</option>';
+        schoolSelect.disabled = true;
+        
+        // Buscar escolas da API
+        const response = await fetch(
             "https://sag-sag.rak8a3.easypanel.host/api/escolas",
             {
-              method: "GET",
-                    headers: {
-                "Content-Type": "application/json",
-              },
-                    }
-          );
-                
-                if (!response.ok) {
-            throw new Error(
-              `Erro ao carregar escolas. Status: ${response.status}`
-            );
-                }
-                
-                const schools = await response.json();
-                
-                // Limpar seletor
-          schoolSelect.innerHTML =
-            '<option value="">Selecione uma escola</option>';
-                
-                // Adicionar cada escola ao seletor
-          schools.forEach((school) => {
-            const option = document.createElement("option");
-                    option.value = school.id;
-            option.textContent = school.nome || "Escola sem nome";
-                    schoolSelect.appendChild(option);
-                });
-            } catch (error) {
-          console.error("Erro ao buscar escolas:", error);
-          schoolSelect.innerHTML =
-            '<option value="">Erro ao carregar escolas</option>';
-            } finally {
-                schoolSelect.disabled = false;
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
             }
+        );
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao carregar escolas. Status: ${response.status}`);
         }
+        
+        const data = await response.json();
+        
+        // Limpar seletor
+        schoolSelect.innerHTML = '<option value="">Selecione uma escola</option>';
+        
+        // Verificar se é array ou objeto paginado
+        let schools = [];
+        if (Array.isArray(data)) {
+            schools = data;
+        } else if (data.data && Array.isArray(data.data)) {
+            schools = data.data;
+        } else if (typeof data === 'object') {
+            // Se for um objeto único, transforma em array
+            schools = [data];
+        }
+        
+        // Adicionar escolas ao seletor sem forEach
+        for (const school of schools) {
+            const option = document.createElement("option");
+            option.value = school.id;
+            option.textContent = school.nome || "Escola sem nome";
+            schoolSelect.appendChild(option);
+        }
+        
+    } catch (error) {
+        console.error("Erro ao buscar escolas:", error);
+        schoolSelect.innerHTML = '<option value="">Erro ao carregar escolas</option>';
+    } finally {
+        schoolSelect.disabled = false;
+    }
+}
+
+// Função para popular o seletor de turmas
+async function populateClassSelector(schoolId) {
+    const classSelect = document.getElementById("linkClass");
+    if (!classSelect) return;
+    
+    try {
+        // Mostrar indicador de carregamento
+        classSelect.innerHTML = '<option value="">Carregando turmas...</option>';
+        classSelect.disabled = true;
+        
+        if (!schoolId) {
+            classSelect.innerHTML = '<option value="">Selecione uma escola primeiro</option>';
+            classSelect.disabled = true;
+            return;
+        }
+        
+        // Buscar turmas da API (corrigido o ? extra)
+        const response = await fetch(
+            `https://sag-sag.rak8a3.easypanel.host/api/turmas?escolaId=${schoolId}&page=1&limit=100`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao carregar turmas. Status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Limpar seletor
+        classSelect.innerHTML = '<option value="">Selecione uma turma</option>';
+        
+        // Verificar se é array ou objeto paginado
+        let classes = [];
+        if (Array.isArray(data)) {
+            classes = data;
+        } else if (data.data && Array.isArray(data.data)) {
+            classes = data.data;
+        } else if (typeof data === 'object') {
+            classes = [data];
+        }
+        
+        // Adicionar turmas ao seletor sem forEach
+        for (const cls of classes) {
+            const option = document.createElement("option");
+            option.value = cls.id;
+            option.textContent = cls.nome || `Turma ${cls.id}`;
+            classSelect.appendChild(option);
+        }
+        
+        // Se não há turmas, mostrar mensagem
+        if (classes.length === 0) {
+            classSelect.innerHTML = '<option value="">Nenhuma turma encontrada</option>';
+        }
+    } catch (error) {
+        console.error("Erro ao buscar turmas:", error);
+        classSelect.innerHTML = '<option value="">Erro ao carregar turmas</option>';
+    } finally {
+        classSelect.disabled = false;
+    }
+}
         
         // Função para popular o seletor de turmas
         async function populateClassSelector(schoolId) {
@@ -8138,7 +8190,7 @@
                 
                 // Buscar turmas da API
           const response = await fetch(
-            `https://sag-sag.rak8a3.easypanel.host/api/turmas?escolaId=${schoolId}`,
+            `https://sag-sag.rak8a3.easypanel.host/api/turmas?escolaId=${schoolId}?page=1&limit=100`,
             {
               method: "GET",
                     headers: {
@@ -12680,55 +12732,67 @@
             return examSelect;
         }
         
-        // Função para popular o seletor de escolas
-        async function populateSchoolSelector() {
-        const schoolSelect = document.getElementById("linkSchool");
-            if (!schoolSelect) return;
-            
-            try {
-                // Mostrar indicador de carregamento
-          schoolSelect.innerHTML =
-            '<option value="">Carregando escolas...</option>';
-                schoolSelect.disabled = true;
-                
-                // Buscar escolas da API
-          const response = await fetch(
-            "https://sag-sag.rak8a3.easypanel.host/api/escolas",
-            {
-              method: "GET",
+      // Função para popular o seletor de escolas
+async function populateSchoolSelector() {
+    const schoolSelect = document.getElementById("linkSchool");
+    if (!schoolSelect) return;
+    
+    try {
+        // Mostrar indicador de carregamento
+        schoolSelect.innerHTML = '<option value="">Carregando escolas...</option>';
+        schoolSelect.disabled = true;
+        
+        // Buscar escolas da API com paginação
+        let allSchools = [];
+        let currentPage = 1;
+        let totalPages = 1; // Começa com 1 e será atualizado pela API
+        
+        do {
+            const response = await fetch(
+                `https://sag-sag.rak8a3.easypanel.host/api/escolas?page=${currentPage}&limit=100`,
+                {
+                    method: "GET",
                     headers: {
-                "Content-Type": "application/json",
-              },
-                    }
-          );
-                
-                if (!response.ok) {
-            throw new Error(
-              `Erro ao carregar escolas. Status: ${response.status}`
-            );
+                        "Content-Type": "application/json",
+                    },
                 }
-                
-                const schools = await response.json();
-                
-                // Limpar seletor
-          schoolSelect.innerHTML =
-            '<option value="">Selecione uma escola</option>';
-                
-                // Adicionar cada escola ao seletor
-          schools.forEach((school) => {
-            const option = document.createElement("option");
-                    option.value = school.id;
-            option.textContent = school.nome || "Escola sem nome";
-                    schoolSelect.appendChild(option);
-                });
-            } catch (error) {
-          console.error("Erro ao buscar escolas:", error);
-          schoolSelect.innerHTML =
-            '<option value="">Erro ao carregar escolas</option>';
-            } finally {
-                schoolSelect.disabled = false;
+            );
+            
+            if (!response.ok) {
+                throw new Error(`Erro ao carregar escolas. Status: ${response.status}`);
             }
-        }
+            
+            const data = await response.json();
+            
+            // Adiciona as escolas da página atual ao array
+            if (data.escolas && data.escolas.length > 0) {
+                allSchools = [...allSchools, ...data.escolas];
+            }
+            
+            // Atualiza o total de páginas (ajuste conforme a estrutura da sua API)
+            totalPages = data.totalPages || data.last_page || 1;
+            currentPage++;
+            
+        } while (currentPage <= totalPages);
+        
+        // Limpar seletor
+        schoolSelect.innerHTML = '<option value="">Selecione uma escola</option>';
+        
+        // Adicionar cada escola ao seletor
+        allSchools.forEach((school) => {
+            const option = document.createElement("option");
+            option.value = school.id;
+            option.textContent = school.nome || "Escola sem nome";
+            schoolSelect.appendChild(option);
+        });
+        
+    } catch (error) {
+        console.error("Erro ao buscar escolas:", error);
+        schoolSelect.innerHTML = '<option value="">Erro ao carregar escolas</option>';
+    } finally {
+        schoolSelect.disabled = false;
+    }
+}
         
         // Função para popular o seletor de turmas
         async function populateClassSelector(schoolId) {
@@ -16626,56 +16690,63 @@
             return examSelect;
         }
         
-        // Função para popular o seletor de escolas
-        async function populateSchoolSelector() {
-        const schoolSelect = document.getElementById("linkSchool");
-            if (!schoolSelect) return;
-            
-            try {
-                // Mostrar indicador de carregamento
-          schoolSelect.innerHTML =
-            '<option value="">Carregando escolas...</option>';
-                schoolSelect.disabled = true;
-                
-                // Buscar escolas da API
-          const response = await fetch(
-            "https://sag-sag.rak8a3.easypanel.host/api/escolas",
+      async function populateSchoolSelector() {
+    const schoolSelect = document.getElementById("linkSchool");
+    if (!schoolSelect) return;
+    
+    try {
+        // Mostrar indicador de carregamento
+        schoolSelect.innerHTML = '<option value="">Carregando escolas...</option>';
+        schoolSelect.disabled = true;
+        
+        // Buscar escolas da API
+        const response = await fetch(
+            "https://sag-sag.rak8a3.easypanel.host/api/escolas?page=1&limit=100",
             {
-              method: "GET",
-                    headers: {
-                "Content-Type": "application/json",
-              },
-                    }
-          );
-                
-                if (!response.ok) {
-            throw new Error(
-              `Erro ao carregar escolas. Status: ${response.status}`
-            );
-                }
-                
-                const schools = await response.json();
-                
-                // Limpar seletor
-          schoolSelect.innerHTML =
-            '<option value="">Selecione uma escola</option>';
-                
-                // Adicionar cada escola ao seletor
-          schools.forEach((school) => {
-            const option = document.createElement("option");
-                    option.value = school.id;
-            option.textContent = school.nome || "Escola sem nome";
-                    schoolSelect.appendChild(option);
-                });
-            } catch (error) {
-          console.error("Erro ao buscar escolas:", error);
-          schoolSelect.innerHTML =
-            '<option value="">Erro ao carregar escolas</option>';
-            } finally {
-                schoolSelect.disabled = false;
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
             }
+        );
+        
+        if (!response.ok) {
+            throw new Error(`Erro ao carregar escolas. Status: ${response.status}`);
         }
         
+        const data = await response.json();
+        
+        // DEBUG: Mostrar resposta da API no console
+        console.log("Resposta da API:", data);
+        
+        // Verificar a estrutura dos dados
+        const schools = data.escolas || data.data || data; // Tenta diferentes formatos
+        
+        // Limpar seletor
+        schoolSelect.innerHTML = '<option value="">Selecione uma escola</option>';
+        
+        // Verificar se há escolas
+        if (!schools || schools.length === 0) {
+            schoolSelect.innerHTML = '<option value="">Nenhuma escola encontrada</option>';
+            return;
+        }
+        
+        // Adicionar cada escola ao seletor
+        schools.forEach((school) => {
+            const option = document.createElement("option");
+            option.value = school.id;
+            option.textContent = school.nome || "Escola sem nome";
+            schoolSelect.appendChild(option);
+        });
+        
+    } catch (error) {
+        console.error("Erro ao buscar escolas:", error);
+        schoolSelect.innerHTML = '<option value="">Erro ao carregar escolas</option>';
+    } finally {
+        schoolSelect.disabled = false;
+    }
+}
+
         // Função para popular o seletor de turmas
         async function populateClassSelector(schoolId) {
         const classSelect = document.getElementById("linkClass");
@@ -19716,54 +19787,67 @@ document.addEventListener('click', function(event) {
         }
         
         // Função para popular o seletor de escolas
-        async function populateSchoolSelector() {
-        const schoolSelect = document.getElementById("linkSchool");
-            if (!schoolSelect) return;
-            
-            try {
-                // Mostrar indicador de carregamento
-          schoolSelect.innerHTML =
-            '<option value="">Carregando escolas...</option>';
-                schoolSelect.disabled = true;
-                
-                // Buscar escolas da API
-          const response = await fetch(
-            "https://sag-sag.rak8a3.easypanel.host/api/escolas",
-            {
-              method: "GET",
+     // Função para popular o seletor de escolas
+async function populateSchoolSelector() {
+    const schoolSelect = document.getElementById("linkSchool");
+    if (!schoolSelect) return;
+    
+    try {
+        // Mostrar indicador de carregamento
+        schoolSelect.innerHTML = '<option value="">Carregando escolas...</option>';
+        schoolSelect.disabled = true;
+        
+        // Buscar escolas da API com paginação
+        let allSchools = [];
+        let currentPage = 1;
+        let totalPages = 1; // Começa com 1 e será atualizado pela API
+        
+        do {
+            const response = await fetch(
+                `https://sag-sag.rak8a3.easypanel.host/api/escolas?page=${currentPage}&limit=100`,
+                {
+                    method: "GET",
                     headers: {
-                "Content-Type": "application/json",
-              },
-                    }
-          );
-                
-                if (!response.ok) {
-            throw new Error(
-              `Erro ao carregar escolas. Status: ${response.status}`
-            );
+                        "Content-Type": "application/json",
+                    },
                 }
-                
-                const schools = await response.json();
-                
-                // Limpar seletor
-          schoolSelect.innerHTML =
-            '<option value="">Selecione uma escola</option>';
-                
-                // Adicionar cada escola ao seletor
-          schools.forEach((school) => {
-            const option = document.createElement("option");
-                    option.value = school.id;
-            option.textContent = school.nome || "Escola sem nome";
-                    schoolSelect.appendChild(option);
-                });
-            } catch (error) {
-          console.error("Erro ao buscar escolas:", error);
-          schoolSelect.innerHTML =
-            '<option value="">Erro ao carregar escolas</option>';
-            } finally {
-                schoolSelect.disabled = false;
+            );
+            
+            if (!response.ok) {
+                throw new Error(`Erro ao carregar escolas. Status: ${response.status}`);
             }
-        }
+            
+            const data = await response.json();
+            
+            // Adiciona as escolas da página atual ao array
+            if (data.escolas && data.escolas.length > 0) {
+                allSchools = [...allSchools, ...data.escolas];
+            }
+            
+            // Atualiza o total de páginas (ajuste conforme a estrutura da sua API)
+            totalPages = data.totalPages || data.last_page || 1;
+            currentPage++;
+            
+        } while (currentPage <= totalPages);
+        
+        // Limpar seletor
+        schoolSelect.innerHTML = '<option value="">Selecione uma escola</option>';
+        
+        // Adicionar cada escola ao seletor
+        allSchools.forEach((school) => {
+            const option = document.createElement("option");
+            option.value = school.id;
+            option.textContent = school.nome || "Escola sem nome";
+            schoolSelect.appendChild(option);
+        });
+        
+    } catch (error) {
+        console.error("Erro ao buscar escolas:", error);
+        schoolSelect.innerHTML = '<option value="">Erro ao carregar escolas</option>';
+    } finally {
+        schoolSelect.disabled = false;
+    }
+}
         
         // Função para popular o seletor de turmas
         async function populateClassSelector(schoolId) {
