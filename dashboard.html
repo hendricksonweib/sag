@@ -660,6 +660,17 @@
               </div>
             </div>
           </div>
+          <!-- Ranking das Regiões -->
+          <div class="bg-white shadow rounded-lg mb-6">
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+              <h3 class="text-lg leading-6 font-medium text-gray-900">
+                Ranking das Regiões
+              </h3>
+            </div>
+            <div class="px-4 py-5 sm:p-6">
+              <canvas id="regionalRankingChart" height="100"></canvas>
+            </div>
+          </div>
         </div>
       </main>
 
@@ -1261,6 +1272,9 @@
 
         // Gráfico de evolução por bimestre
         renderEvolutionByTermChart(year);
+
+        // Gráfico de ranking das regiões
+        loadRegionalRanking();
       }
 
       // Função para popular todos os filtros usando os dados da API
@@ -1873,7 +1887,6 @@
 
               // Criar HTML da tabela
               let tableHTML = `
-                  <h3 class="text-lg font-medium text-gray-900 mb-4 text-center">Ranking de Desempenho por Escolas</h3>
                   <table class="min-w-full divide-y divide-gray-200">
                       <thead class="bg-gray-50">
                           <tr>
@@ -2085,6 +2098,9 @@
           classFilter,
           resultsFilter
         );
+
+        // Carregar o ranking das regiões (independente dos filtros)
+        loadRegionalRanking();
         loadCurriculumComponentsChart(
           yearFilter,
           regionFilter,
@@ -2900,7 +2916,7 @@
                                 : ""
                             }
                         </dl>
-                        
+
                         <!-- Seção de evolução da habilidade -->
                         <div class="mt-6 sm:col-span-2">
                             <h4 class="text-base font-medium text-gray-700 mb-3">Evolução do Desempenho</h4>
@@ -2912,7 +2928,7 @@
                                 }
                             </div>
                         </div>
-                        
+
                         <!-- Tabela com histórico detalhado -->
                         ${
                           historyData && historyData.length > 0
@@ -4867,6 +4883,142 @@
 
           // Mesmo com erro, tentar atualizar escolas
           updateSchoolsFilter();
+        }
+      }
+
+      // Função para carregar o ranking das regiões
+      async function loadRegionalRanking() {
+        try {
+          console.log("Carregando ranking das regiões...");
+
+          // Dados das regiões na ordem correta
+          const mockData = [
+            {
+              id: 1,
+              nome: "Regional Sede",
+              desempenho: 85.5,
+              total_alunos: 1200,
+              total_escolas: 15,
+              participacao: 92.3,
+            },
+            {
+              id: 2,
+              nome: "Regional das Vilas",
+              desempenho: 82.1,
+              total_alunos: 1100,
+              total_escolas: 14,
+              participacao: 88.7,
+            },
+            {
+              id: 3,
+              nome: "Regional Limítrofes / Parques",
+              desempenho: 78.3,
+              total_alunos: 950,
+              total_escolas: 12,
+              participacao: 85.9,
+            },
+            {
+              id: 4,
+              nome: "Regional Piçarreira / Zona Rural",
+              desempenho: 76.8,
+              total_alunos: 850,
+              total_escolas: 10,
+              participacao: 83.2,
+            },
+            {
+              id: 5,
+              nome: "Não Definido",
+              desempenho: 70.5,
+              total_alunos: 300,
+              total_escolas: 4,
+              participacao: 75.0,
+            },
+          ];
+
+          // Verificar se o canvas já tem um gráfico e destruí-lo
+          const chartCanvas = document.getElementById("regionalRankingChart");
+          const chartInstance = Chart.getChart(chartCanvas);
+          if (chartInstance) {
+            chartInstance.destroy();
+          }
+
+          // Preparar dados para o gráfico
+          const labels = mockData.map((region) => region.nome);
+          const performanceData = mockData.map((region) => region.desempenho);
+
+          // Cores fixas para cada região
+          const backgroundColors = [
+            "rgba(0, 51, 153, 0.6)", // Azul escuro - Regional Sede
+            "rgba(0, 153, 0, 0.6)", // Verde - Regional das Vilas
+            "rgba(255, 204, 0, 0.6)", // Amarelo - Regional Limítrofes
+            "rgba(128, 0, 0, 0.6)", // Vermelho - Regional Piçarreira
+            "rgba(128, 128, 128, 0.6)", // Cinza - Não Definido
+          ];
+
+          const borderColors = [
+            "rgb(0, 51, 153)", // Azul escuro - Regional Sede
+            "rgb(0, 153, 0)", // Verde - Regional das Vilas
+            "rgb(255, 204, 0)", // Amarelo - Regional Limítrofes
+            "rgb(128, 0, 0)", // Vermelho - Regional Piçarreira
+            "rgb(128, 128, 128)", // Cinza - Não Definido
+          ];
+
+          // Criar o gráfico
+          new Chart(chartCanvas, {
+            type: "bar",
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  label: "Desempenho (%)",
+                  data: performanceData,
+                  backgroundColor: backgroundColors,
+                  borderColor: borderColors,
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: {
+                  display: false,
+                },
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      const region = mockData[context.dataIndex];
+                      return [
+                        `Desempenho: ${region.desempenho}%`,
+                        `Total de Alunos: ${region.total_alunos}`,
+                        `Total de Escolas: ${region.total_escolas}`,
+                        `Taxa de Participação: ${region.participacao}%`,
+                      ];
+                    },
+                  },
+                },
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  max: 100,
+                  title: {
+                    display: true,
+                    text: "Desempenho (%)",
+                  },
+                },
+                x: {
+                  title: {
+                    display: true,
+                    text: "Regiões",
+                  },
+                },
+              },
+            },
+          });
+        } catch (error) {
+          console.error("Erro ao carregar ranking das regiões:", error);
+          showChartError("regionalRankingChart", error);
         }
       }
     </script>
