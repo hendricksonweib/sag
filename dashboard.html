@@ -1790,6 +1790,7 @@
           const params = new URLSearchParams();
 
           // Incluir apenas os parâmetros específicos solicitados
+          if (year !== "all") params.append("ano_letivo", year);
           if (region !== "all") params.append("regiao_id", region);
           if (group !== "all") params.append("grupo_id", group);
           if (school !== "all") params.append("escola_id", school);
@@ -1805,6 +1806,11 @@
               "resultados",
               results === "high" ? "melhores" : "criticos"
             );
+            // Adicionar query de acertos/erros baseado no filtro de resultados
+            params.append("query", results === "high" ? "acertos" : "erros");
+          } else {
+            // Por padrão, usar acertos
+            params.append("query", "acertos");
           }
 
           console.log(
@@ -2037,9 +2043,14 @@
         }, 3000);
 
         // Exibir indicadores de carregamento
-        document
-          .getElementById("schoolPerformanceChart")
-          .getContext("2d").canvas.style.opacity = "0.5";
+        const schoolPerformanceDiv = document.getElementById(
+          "schoolPerformanceChart"
+        );
+        if (schoolPerformanceDiv) {
+          schoolPerformanceDiv.innerHTML =
+            '<div class="text-gray-500 text-center py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Carregando dados...</div>';
+        }
+
         document
           .getElementById("curriculumComponentsChart")
           .getContext("2d").canvas.style.opacity = "0.5";
@@ -2107,9 +2118,6 @@
 
         // Restaurar opacidade dos gráficos após a renderização
         setTimeout(() => {
-          document
-            .getElementById("schoolPerformanceChart")
-            .getContext("2d").canvas.style.opacity = "1";
           document
             .getElementById("curriculumComponentsChart")
             .getContext("2d").canvas.style.opacity = "1";
@@ -2367,6 +2375,7 @@
           const params = new URLSearchParams();
 
           // Incluir apenas os parâmetros específicos solicitados
+          if (year !== "all") params.append("ano_letivo", year);
           if (region !== "all") params.append("regiao_id", region);
           if (group !== "all") params.append("grupo_id", group);
           if (school !== "all") params.append("escola_id", school);
@@ -3687,6 +3696,7 @@
           const params = new URLSearchParams();
 
           // Incluir apenas os parâmetros específicos solicitados
+          if (year !== "all") params.append("ano_letivo", year);
           if (region !== "all") params.append("regiao_id", region);
           if (group !== "all") params.append("grupo_id", group);
           if (school !== "all") params.append("escola_id", school);
@@ -4236,6 +4246,7 @@
           const params = new URLSearchParams();
 
           // Incluir apenas os parâmetros específicos solicitados
+          if (year !== "all") params.append("ano_letivo", year);
           if (region !== "all") params.append("regiao_id", region);
           if (group !== "all") params.append("grupo_id", group);
           if (school !== "all") params.append("escola_id", school);
@@ -4441,6 +4452,7 @@
           const params = new URLSearchParams();
 
           // Incluir apenas os parâmetros específicos solicitados
+          if (year !== "all") params.append("ano_letivo", year);
           if (region !== "all") params.append("regiao_id", region);
           if (group !== "all") params.append("grupo_id", group);
           if (school !== "all") params.append("escola_id", school);
