@@ -634,7 +634,6 @@
         resetSelection(false, false, false); // Não reseta seletores, só a seção de ação
         const actionSection = document.getElementById("actionSection");
         const generatePdfBtn = document.getElementById("generatePdfBtn");
-        const studentCountMsg = document.getElementById("studentCountMessage");
         const examInfoMsg = document.getElementById("examInfoMessage");
 
         if (!currentClassId || !currentExamId) {
@@ -729,7 +728,6 @@
               ? currentExam.questions.length
               : 0;
 
-            studentCountMsg.textContent = `${currentClassStudents.length} aluno(s) encontrado(s)`;
             examInfoMsg.textContent = `Prova selecionada: ${
               currentExam.nome || currentExam.name
             } - ${questionCount} questões`;
