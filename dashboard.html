@@ -828,6 +828,7 @@
               loadClassesFromAPI(),
               loadStudentsFromAPI(),
               loadExamsFromAPI(),
+              loadRegionalRanking(), // Adicionando a chamada do ranking das regiões
             ]);
 
             // Depois que todas as chamadas básicas forem concluídas, atualizar a interface
@@ -4889,91 +4890,41 @@
       // Função para carregar o ranking das regiões
       async function loadRegionalRanking() {
         try {
-          console.log("Carregando ranking das regiões...");
-
-          // Dados das regiões na ordem correta
-          const mockData = [
-            {
-              id: 1,
-              nome: "Regional Sede",
-              desempenho: 85.5,
-              total_alunos: 1200,
-              total_escolas: 15,
-              participacao: 92.3,
-            },
-            {
-              id: 2,
-              nome: "Regional das Vilas",
-              desempenho: 82.1,
-              total_alunos: 1100,
-              total_escolas: 14,
-              participacao: 88.7,
-            },
-            {
-              id: 3,
-              nome: "Regional Limítrofes / Parques",
-              desempenho: 78.3,
-              total_alunos: 950,
-              total_escolas: 12,
-              participacao: 85.9,
-            },
-            {
-              id: 4,
-              nome: "Regional Piçarreira / Zona Rural",
-              desempenho: 76.8,
-              total_alunos: 850,
-              total_escolas: 10,
-              participacao: 83.2,
-            },
-            {
-              id: 5,
-              nome: "Não Definido",
-              desempenho: 70.5,
-              total_alunos: 300,
-              total_escolas: 4,
-              participacao: 75.0,
-            },
-          ];
-
-          // Verificar se o canvas já tem um gráfico e destruí-lo
-          const chartCanvas = document.getElementById("regionalRankingChart");
-          const chartInstance = Chart.getChart(chartCanvas);
-          if (chartInstance) {
-            chartInstance.destroy();
+          const response = await fetch(
+            "https://sag-sag.rak8a3.easypanel.host/api/dashboard/regional-performance"
+          );
+          if (!response.ok) {
+            throw new Error("Falha ao carregar o ranking das regiões");
           }
+          const data = await response.json();
 
-          // Preparar dados para o gráfico
-          const labels = mockData.map((region) => region.nome);
-          const performanceData = mockData.map((region) => region.desempenho);
+          // Extrair dados do gráfico
+          const regioes = data.dados_grafico;
 
-          // Cores fixas para cada região
-          const backgroundColors = [
-            "rgba(0, 51, 153, 0.6)", // Azul escuro - Regional Sede
-            "rgba(0, 153, 0, 0.6)", // Verde - Regional das Vilas
-            "rgba(255, 204, 0, 0.6)", // Amarelo - Regional Limítrofes
-            "rgba(128, 0, 0, 0.6)", // Vermelho - Regional Piçarreira
-            "rgba(128, 128, 128, 0.6)", // Cinza - Não Definido
-          ];
-
-          const borderColors = [
-            "rgb(0, 51, 153)", // Azul escuro - Regional Sede
-            "rgb(0, 153, 0)", // Verde - Regional das Vilas
-            "rgb(255, 204, 0)", // Amarelo - Regional Limítrofes
-            "rgb(128, 0, 0)", // Vermelho - Regional Piçarreira
-            "rgb(128, 128, 128)", // Cinza - Não Definido
-          ];
-
-          // Criar o gráfico
-          new Chart(chartCanvas, {
+          // Configurar o gráfico de ranking das regiões
+          const rankingCtx = document
+            .getElementById("regionalRankingChart")
+            .getContext("2d");
+          new Chart(rankingCtx, {
             type: "bar",
             data: {
-              labels: labels,
+              labels: regioes.map((item) => item.regiao_nome),
               datasets: [
                 {
-                  label: "Desempenho (%)",
-                  data: performanceData,
-                  backgroundColor: backgroundColors,
-                  borderColor: borderColors,
+                  label: "Desempenho por Região",
+                  data: regioes.map((item) => item.media_percentual),
+                  backgroundColor: regioes.map((item) => {
+                    switch (item.classificacao) {
+                      case "Bom":
+                        return "rgba(34, 197, 94, 0.8)"; // Verde
+                      case "Regular":
+                        return "rgba(234, 179, 8, 0.8)"; // Amarelo
+                      case "Crítico":
+                        return "rgba(239, 68, 68, 0.8)"; // Vermelho
+                      default:
+                        return "rgba(54, 162, 235, 0.8)"; // Azul (padrão)
+                    }
+                  }),
                   borderWidth: 1,
                 },
               ],
@@ -4981,18 +4932,19 @@
             options: {
               responsive: true,
               plugins: {
-                legend: {
-                  display: false,
-                },
                 tooltip: {
                   callbacks: {
                     label: function (context) {
-                      const region = mockData[context.dataIndex];
+                      const regiao = regioes[context.dataIndex];
                       return [
-                        `Desempenho: ${region.desempenho}%`,
-                        `Total de Alunos: ${region.total_alunos}`,
-                        `Total de Escolas: ${region.total_escolas}`,
-                        `Taxa de Participação: ${region.participacao}%`,
+                        `Desempenho: ${regiao.media_percentual.toFixed(1)}%`,
+                        `Total Escolas: ${regiao.total_escolas}`,
+                        `Total Turmas: ${regiao.total_turmas}`,
+                        `Total Alunos: ${regiao.total_alunos}`,
+                        `Participação: ${regiao.percentual_participacao}%`,
+                        `Maior Nota: ${regiao.maior_nota}`,
+                        `Menor Nota: ${regiao.menor_nota}`,
+                        `Classificação: ${regiao.classificacao}`,
                       ];
                     },
                   },
@@ -5016,9 +4968,49 @@
               },
             },
           });
+
+          // Adicionar estatísticas gerais
+          const statsContainer = document.createElement("div");
+          statsContainer.className =
+            "mt-4 grid grid-cols-1 md:grid-cols-3 gap-4";
+          statsContainer.innerHTML = `
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <h4 class="text-sm font-medium text-gray-500">Total de Regiões</h4>
+              <p class="mt-1 text-lg font-semibold">${
+                data.estatisticas_gerais.total_regioes
+              }</p>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <h4 class="text-sm font-medium text-gray-500">Média Geral</h4>
+              <p class="mt-1 text-lg font-semibold">${data.estatisticas_gerais.media_geral.toFixed(
+                1
+              )}%</p>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <h4 class="text-sm font-medium text-gray-500">Melhor Região</h4>
+              <p class="mt-1 text-lg font-semibold">${
+                data.estatisticas_gerais.melhor_regiao
+              }</p>
+            </div>
+          `;
+
+          // Encontrar o elemento pai do gráfico e adicionar as estatísticas
+          const chartContainer = document.getElementById(
+            "regionalRankingChart"
+          ).parentElement;
+          // Remover estatísticas anteriores se existirem
+          const oldStats = chartContainer.querySelector(".grid");
+          if (oldStats) {
+            oldStats.remove();
+          }
+          chartContainer.appendChild(statsContainer);
         } catch (error) {
-          console.error("Erro ao carregar ranking das regiões:", error);
-          showChartError("regionalRankingChart", error);
+          console.error("Erro ao carregar o ranking das regiões:", error);
+          showAlert(
+            "error",
+            "Erro",
+            "Não foi possível carregar o ranking das regiões."
+          );
         }
       }
     </script>
